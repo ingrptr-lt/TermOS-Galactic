@@ -3,468 +3,508 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>TermOS: Galactic [Ultimate]</title>
+    <title>TermOS: Galactic [Module Build]</title>
     
-    <!-- PWA METADATA (Using SVG Data URIs to prevent missing image errors) -->
+    <!-- PWA METADATA -->
     <meta name="theme-color" content="#050505">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="description" content="Next-gen Cyberpunk Terminal OS with P2P Video, File Transfer, and AI.">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23000'/><path d='M16 2L2 30h28L16 2zm0 6l10 20H6l10-20z' fill='%23a855f7'/></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'><rect width='192' height='192' fill='%23a855f7'/><path d='M96 24L24 168h144L96 24zm0 36l60 120H36l60-120z' fill='%23000'/></svg>">
-
-    <!-- FONTS -->
+    
+    <!-- FONTS (Google Fonts via CDN) -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Inter:wght@300;400;600&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
 
-    <!-- TAILWIND CSS -->
-    <link rel="stylesheet" href="public/css/style.css">
-    
-    <!-- EXTERNAL LIBS (Non-module versions for global access or ESM versions in script type module) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <!-- HIGHLIGHT.JS (Loaded globally for module access) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
 
-    <!-- CUSTOM STYLES (Inline to fix missing css/main.css) -->
+    <!-- INTERNAL CSS (Tailwind-like styling without build step) -->
     <style>
         :root {
+            --bg-dark: #050505;
             --neon-purple: #a855f7;
             --neon-cyan: #06b6d4;
-            --bg-dark: #050505;
+            --glass-bg: rgba(20, 20, 20, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --font-header: 'Orbitron', sans-serif;
+            --font-ui: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
         
         body {
             background-color: var(--bg-dark);
             color: #e5e5e5;
-            font-family: 'Inter', sans-serif;
-            overflow: hidden; /* Manage scroll internally */
+            font-family: var(--font-ui);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
-
-        .font-header { font-family: 'Orbitron', sans-serif; }
-        .font-mono { font-family: 'Fira Code', monospace; }
 
         /* Utility Classes */
-        .glass-panel {
-            background: rgba(10, 10, 10, 0.7);
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 0.75rem; }
+        .w-full { width: 100%; }
+        .h-full { height: 100%; }
+        .relative { position: relative; }
+        .fixed { position: fixed; }
+        .inset-0 { top: 0; left: 0; right: 0; bottom: 0; }
+        .pointer-none { pointer-events: none; }
+        .z-10 { z-index: 10; }
+        .z-20 { z-index: 20; }
+        .z-50 { z-index: 50; }
+        .z-100 { z-index: 100; }
+        
+        /* Components */
+        .glass {
+            background: var(--glass-bg);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
         }
 
-        .hidden-ui { display: none !important; }
-
-        .scanlines {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
-            background-size: 100% 4px;
-            pointer-events: none;
-            z-index: 50;
-            opacity: 0.15;
+        .btn-icon { 
+            cursor: pointer; border: none; background: transparent; color: inherit; 
+            padding: 0.5rem; border-radius: 50%; transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+        }
+        .btn-icon:hover { background: rgba(255,255,255,0.1); }
+        .btn-ghost { 
+            font-family: var(--font-mono); font-size: 0.7rem; padding: 0.3rem 0.75rem; 
+            border: 1px solid var(--glass-border); border-radius: 99px; cursor: pointer; 
+            background: rgba(0,0,0,0.3); color: inherit; transition: 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(to right, #9333ea, #4f46e5);
+            color: white; padding: 0.5rem; border-radius: 0.5rem;
+            border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
 
-        /* Loader */
-        .loader-ring {
-            width: 60px; height: 60px;
-            border: 4px solid rgba(168, 85, 247, 0.1);
-            border-left-color: var(--neon-purple);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        input[type="text"], input[type="password"], textarea {
+            background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border);
+            color: white; border-radius: 0.375rem; padding: 0.5rem;
+            font-family: var(--font-mono); width: 100%; transition: 0.2s;
         }
+        input:focus, textarea:focus { border-color: var(--neon-purple); }
 
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        /* Media Deck */
-        .media-overlay {
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%) scale(0.95);
-            width: 90%; max-width: 500px;
-            z-index: 40;
-            opacity: 0; pointer-events: none;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        /* Header */
+        header { height: 4rem; padding: 0 1rem; background: rgba(0,0,0,0.8); border-bottom: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: space-between; }
+        .logo-box { 
+            width: 2.5rem; height: 2.5rem; background: linear-gradient(135deg, #7e22ce, #2563eb); 
+            border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; 
+            border: 1px solid rgba(255,255,255,0.2); position: relative; 
         }
-        .media-overlay.active {
-            opacity: 1; pointer-events: auto;
-            transform: translate(-50%, -50%) scale(1);
-        }
+        .logo-box::after { content:''; position:absolute; inset:0; background:inherit; filter:blur(8px); opacity:0.6; z-index:-1; }
 
-        /* Chat Scrollbar */
+        /* Chat */
+        #chat-container { flex: 1; overflow-y: auto; padding: 5rem 1rem 8rem 1rem; scroll-behavior: smooth; max-width: 1000px; margin: 0 auto; width: 100%; }
         #chat-container::-webkit-scrollbar { width: 6px; }
-        #chat-container::-webkit-scrollbar-track { background: transparent; }
         #chat-container::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-        #chat-container::-webkit-scrollbar-thumb:hover { background: #555; }
 
-        /* Code Editor Overlay */
-        #code-editor-overlay {
-            position: fixed; inset: 0; z-index: 100;
-            background: #0d1117; display: flex; flex-direction: column;
-        }
-        .editor-body { flex: 1; display: flex; overflow: hidden; position: relative; }
-        #code-area {
-            flex: 1; background: #0d1117; color: #e6edf3; border: none;
-            resize: none; padding: 20px; font-family: 'Fira Code', monospace;
-            font-size: 14px; line-height: 1.5; outline: none;
-        }
-        .copilot-sidebar {
-            width: 300px; background: #161b22; border-left: 1px solid #30363d;
-            display: flex; flex-direction: column;
-        }
-        #preview-area {
-            position: absolute; bottom: 0; right: 0; width: 400px; height: 300px;
-            background: white; border: 1px solid #30363d; display: none;
-            z-index: 10; box-shadow: -5px -5px 20px rgba(0,0,0,0.5);
-        }
+        .message { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; animation: fadeIn 0.3s ease-out; }
+        .message.user { margin-left: auto; flex-direction: row-reverse; }
+        .avatar { width: 2rem; height: 2rem; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; flex-shrink: 0; }
+        .avatar.ai { background: linear-gradient(135deg, #a855f7, #2563eb); }
+        .avatar.user { background: #4b5563; }
+        .bubble { padding: 1rem; border-radius: 0.5rem; font-size: 0.9rem; line-height: 1.6; box-shadow: 0 4px 6px rgba(0,0,0,0.2); max-width: 85%; }
+        .message.ai .bubble { border-top-right-radius: 0; border: 1px solid var(--glass-border); }
+        .message.user .bubble { background: rgba(147, 51, 234, 0.2); border: 1px solid rgba(168, 85, 247, 0.2); border-top-left-radius: 0; }
+
+        /* Input */
+        #input-area { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.9); border-top: 1px solid var(--glass-border); padding: 0.75rem 1rem 1.5rem 1rem; display: flex; justify-content: center; z-index: 30; }
+        #chat-form { width: 100%; max-width: 56rem; display: flex; gap: 0.5rem; background: rgba(20,20,20,0.6); padding: 0.25rem; border-radius: 0.75rem; border: 1px solid var(--glass-border); transition: 0.2s; }
+        #chat-form:focus-within { border-color: rgba(168, 85, 247, 0.4); box-shadow: 0 0 15px rgba(168,85,247,0.1); }
+
+        /* Overlays */
+        #boot-screen { background: black; z-index: 100; }
+        .loader { width: 50px; height: 50px; border: 3px solid rgba(168, 85, 247, 0.1); border-left-color: var(--neon-purple); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Admin */
+        #admin-panel { position: fixed; bottom: 5rem; right: 1rem; left: 1rem; max-width: 20rem; margin-left: auto; padding: 1.25rem; border: 1px solid rgba(239, 68, 68, 0.3); z-index: 50; }
+        
+        /* Media Deck */
+        #media-deck { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9); width: 90%; max-width: 500px; padding: 0.75rem; border: 1px solid rgba(168, 85, 247, 0.3); box-shadow: 0 0 50px rgba(168,85,247,0.1); z-index: 40; opacity: 0; pointer-events: none; transition: all 0.3s; }
+        #media-deck.active { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+
+        /* IDE */
+        #code-editor-overlay { position: fixed; inset: 0; z-index: 100; background: #0d1117; display: flex; flex-direction: column; }
+        .editor-toolbar { height: 3rem; border-bottom: 1px solid #30363d; padding: 0 1rem; display: flex; justify-content: space-between; align-items: center; background: #161b22; }
+        .editor-layout { flex: 1; display: flex; overflow: hidden; position: relative; }
+        #code-area { flex: 1; background: #0d1117; color: #e6edf3; border: none; padding: 1rem; font-family: var(--font-mono); resize: none; font-size: 0.9rem; }
+        #preview-area { position: absolute; bottom: 0; right: 0; width: 400px; height: 300px; background: white; border-top: 1px solid #30363d; display: none; z-index: 10; }
         #preview-area.show { display: block; }
-        #preview-frame { width: 100%; height: 100%; border: none; }
 
-        /* Input Glow */
-        .input-glow:focus-within {
-            box-shadow: 0 0 15px rgba(168, 85, 247, 0.2);
-            border-color: rgba(168, 85, 247, 0.4);
-        }
+        /* Markdown Styles */
+        pre { background: rgba(0,0,0,0.6) !important; padding: 1rem !important; border-radius: 0.5rem !important; border: 1px solid #333; margin: 0.5rem 0; overflow-x: auto; }
+        code { font-family: var(--font-mono); color: var(--neon-cyan); }
+        p { margin-bottom: 0.5rem; }
+        p:last-child { margin-bottom: 0; }
+        
+        /* Scanlines */
+        .scanlines { position: fixed; inset: 0; pointer-events: none; z-index: 90; background: linear-gradient(to bottom, rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%); background-size: 100% 4px; }
     </style>
 </head>
-<body class="h-screen w-screen flex flex-col relative select-none text-sm">
+<body>
 
-    <!-- VISUAL OVERLAYS -->
+    <!-- VISUAL FX -->
     <div class="scanlines"></div>
-    <canvas id="galaxy-canvas" class="fixed top-0 left-0 w-full h-full z-0 pointer-events-none"></canvas>
+    <canvas id="galaxy-canvas" class="fixed inset-0 z-0 pointer-none"></canvas>
 
     <!-- BOOT SCREEN -->
-    <div id="boot-screen" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center">
-        <div class="loader-ring mb-6"></div>
-        <h1 class="text-3xl font-header text-white tracking-[0.2em] animate-pulse drop-shadow-[0_0_10px_rgba(168,85,247,0.8)]">TERMOS <span class="text-purple-500">GALACTIC</span></h1>
-        <div class="mt-4 font-mono text-xs text-cyan-400 flex gap-2 items-center">
-            <span class="w-2 h-2 bg-cyan-400 rounded-full animate-ping"></span> <span id="txt-init">INITIALIZING NEURAL LINK...</span>
+    <div id="boot-screen" class="fixed inset-0 flex flex-col items-center justify-center">
+        <div class="loader mb-6"></div>
+        <h1 class="text-3xl font-header text-white tracking-[0.2em] animate-pulse">TERMOS <span class="text-purple" style="color:var(--neon-purple)">GALACTIC</span></h1>
+        <div class="mt-4 font-mono text-xs text-cyan flex gap-2 items-center" style="color:var(--neon-cyan)">
+            <span style="width:6px;height:6px;background:currentColor;border-radius:50%;animation:ping 1s infinite"></span>
+            <span id="txt-init">INITIALIZING NEURAL LINK...</span>
         </div>
     </div>
 
     <!-- HEADER -->
-    <header class="fixed top-0 left-0 right-0 z-20 glass-panel border-b border-white/10 h-16 flex items-center justify-between px-4 lg:px-6 bg-black/60">
+    <header class="z-20 glass">
         <div class="flex items-center gap-3">
-            <div class="relative w-10 h-10 flex items-center justify-center">
-                <div class="absolute inset-0 bg-purple-600 rounded-lg blur opacity-40 animate-pulse"></div>
-                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center border border-white/20 relative z-10">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                </div>
+            <div class="logo-box">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
             </div>
             <div>
-                <h1 class="font-header font-bold text-lg tracking-wider text-white hidden sm:block">TERMOS <span class="text-purple-400">GALACTIC</span></h1>
-                <div class="flex items-center gap-2 text-[10px] text-gray-400 font-mono mt-0.5">
-                    <div id="api-status-dot" class="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                <h1 class="font-header font-bold text-lg hidden sm:block text-white">TERMOS <span style="color:var(--neon-purple)">GALACTIC</span></h1>
+                <div class="flex items-center gap-2 text-[10px] text-gray font-mono">
+                    <div id="api-status-dot" style="width:6px;height:6px;border-radius:50%;background:red"></div>
                     <span id="room-display">SYSTEM READY</span>
                 </div>
             </div>
         </div>
         <div class="flex items-center gap-2">
-            <button id="btn-media-deck" class="p-2 rounded-full hover:bg-white/10 text-purple-300 transition-colors" title="Media Deck">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            <button id="btn-media-deck" class="btn-icon" style="color:var(--neon-purple)" title="Media Deck">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
             </button>
-            <button id="btn-kernel" class="hidden sm:flex bg-cyan-900/30 hover:bg-cyan-900/50 text-cyan-300 border border-cyan-500/30 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all">🧠 KERNEL</button>
-            <button id="btn-ide" class="hidden sm:flex bg-purple-900/30 hover:bg-purple-900/50 text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all">🖋 IDE</button>
-            <button id="btn-admin" class="p-2 rounded-full text-red-500/50 hover:text-red-500 hover:bg-red-900/20 transition-colors" title="System Console">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            <button id="btn-ide" class="hidden sm:flex btn-ghost" style="color:var(--neon-purple)">🖋 IDE</button>
+            <button id="btn-admin" class="btn-icon" style="color:#ef4444" title="System Console">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
             </button>
         </div>
     </header>
 
     <!-- MAIN CHAT AREA -->
-    <main id="chat-container" class="flex-1 overflow-y-auto pt-20 pb-32 px-4 z-10 scroll-smooth max-w-4xl mx-auto w-full space-y-4">
-        <!-- Welcome Message -->
-        <div class="flex gap-3 max-w-3xl">
-            <div class="w-8 h-8 rounded bg-gradient-to-br from-purple-500 to-blue-600 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white">AI</div>
-            <div class="glass-panel p-4 rounded-tr-xl rounded-br-xl rounded-bl-xl border border-white/5 text-gray-300 text-sm leading-relaxed shadow-lg">
-                <p class="font-mono text-cyan-400 mb-2 text-xs">>> SYSTEM ONLINE. GROQ NEURAL LINK STANDBY.</p>
-                <p>Welcome to TermOS Galactic. I am ready to assist. Use <span class="bg-white/10 px-1 py-0.5 rounded text-purple-300 font-mono text-xs">/ai [prompt]</span> to chat, or configure your API key in the Admin Panel (Lock Icon).</p>
+    <main id="chat-container">
+        <div class="message ai">
+            <div class="avatar ai">AI</div>
+            <div class="bubble glass">
+                <p class="text-cyan text-xs font-mono mb-2" style="color:var(--neon-cyan)">>> SYSTEM ONLINE. GROQ NEURAL LINK STANDBY.</p>
+                <p>Welcome to TermOS Galactic. Use <code>/ai [prompt]</code> to chat, or configure your API key in the Admin Panel.</p>
             </div>
         </div>
     </main>
 
     <!-- INPUT AREA -->
-    <div class="fixed bottom-0 left-0 w-full z-30 glass-panel border-t border-white/10 pt-3 pb-6 px-4 bg-black/80">
-        <div class="max-w-4xl mx-auto">
-            <div class="flex items-end gap-2 bg-black/40 rounded-xl p-1.5 border border-white/5 input-glow transition-all duration-300">
-                <button id="btn-ai-input" class="p-2.5 rounded-lg text-cyan-400 hover:bg-cyan-900/30 shrink-0 transition-colors" title="Ask AI">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
-                </button>
-                <input type="text" id="user-input" placeholder="Command: /ai [prompt], /help..." autocomplete="off" class="flex-1 bg-transparent border-none outline-none text-white placeholder-gray-500 px-3 py-2.5 text-sm font-light tracking-wide">
-                <button id="send-btn" class="p-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shrink-0 transform active:scale-95 transition-all">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- FLOATING MEDIA DECK -->
-    <div id="media-deck" class="media-overlay glass-panel rounded-2xl overflow-hidden border border-purple-500/30 shadow-[0_0_50px_rgba(168,85,247,0.2)]">
-        <div class="p-3 border-b border-white/5 flex justify-between items-center bg-black/40">
-            <span class="text-xs font-bold text-white font-header tracking-wider text-cyan-400">MEDIA DECK</span>
-            <button id="btn-close-deck" class="text-gray-400 hover:text-white transition-colors">✕</button>
-        </div>
-        <div class="p-4">
-            <div class="flex gap-2 mb-4 p-1 bg-white/5 rounded-lg">
-                <button class="flex-1 py-1.5 text-[10px] font-bold rounded bg-white/10 text-purple-300 shadow-sm border border-white/5 transition-all">VIDEO</button>
-                <button class="flex-1 py-1.5 text-[10px] font-bold rounded text-gray-400 hover:text-white hover:bg-white/5 transition-all">RADIO</button>
-            </div>
-            
-            <div id="video-placeholder" class="bg-black/50 rounded-lg p-6 text-center border border-white/5 border-dashed mb-3">
-                <p class="text-xs text-gray-500 mb-2 font-mono">Uplink Status: STANDBY</p>
-                <button class="text-[10px] bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded shadow-lg transition-all w-full border border-purple-400/30 flex items-center justify-center gap-2">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> <span>INITIALIZE BROADCAST</span>
-                </button>
-            </div>
-        </div>
+    <div id="input-area">
+        <form id="chat-form">
+            <button type="button" class="btn-icon" style="color:var(--neon-cyan)" title="Ask AI">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            </button>
+            <input type="text" id="user-input" placeholder="Command: /ai [prompt], /help..." autocomplete="off" style="background:transparent;border:none;flex:1;">
+            <button type="submit" class="btn-primary px-3">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+            </button>
+        </form>
     </div>
 
     <!-- ADMIN PANEL -->
-    <div id="admin-panel" class="hidden-ui fixed bottom-20 right-4 left-4 md:left-auto md:w-80 glass-panel rounded-xl border border-red-500/30 p-5 z-50 shadow-2xl bg-black/90">
-        <h3 class="text-red-400 font-header text-xs font-bold mb-4 uppercase flex justify-between items-center">
-            <span>System Console</span>
-            <span class="text-[9px] bg-red-900/50 px-2 py-0.5 rounded text-red-300">GEN 2</span>
-        </h3>
-        <div class="space-y-4">
+    <div id="admin-panel" class="glass hidden">
+        <h3 class="text-red text-xs font-bold mb-4 uppercase flex justify-between" style="color:#ef4444">System Console <span class="bg-red-900 text-white px-1 rounded text-[9px]">GEN 2</span></h3>
+        <form id="admin-form" class="flex flex-col gap-3">
             <div>
-                <label class="text-[9px] text-gray-500 uppercase font-bold tracking-wider mb-1 block">Neural API Key (Groq)</label>
-                <input type="password" id="api-key-input" class="w-full bg-black/50 border border-white/10 rounded p-2.5 text-white text-xs focus:border-red-500 outline-none font-mono transition-colors" placeholder="gsk_...">
+                <label class="text-gray text-[9px] uppercase font-bold block mb-1">Neural API Key (Groq)</label>
+                <input type="password" id="api-key-input" placeholder="gsk_...">
             </div>
-            <button id="btn-save-api" class="w-full bg-red-900/40 hover:bg-red-800/60 text-red-200 text-[10px] font-bold py-2.5 rounded border border-red-500/30 transition-all hover:shadow-[0_0_15px_rgba(239,68,68,0.3)]">SAVE & RECONNECT</button>
-            <hr class="border-white/10">
-            <button id="btn-reset-sys" class="w-full bg-white/5 hover:bg-red-900/20 text-white text-[10px] font-bold py-2 rounded transition-colors border border-white/10 hover:border-red-500/50">EMERGENCY SYSTEM RESET</button>
+            <button type="submit" class="bg-red-900 text-red-200 text-xs font-bold py-2 rounded border border-red-700 hover:bg-red-800" style="background:rgba(127,29,29,0.4);color:#fecaca">SAVE & RECONNECT</button>
+            <hr style="border-color:var(--glass-border)">
+            <button type="button" id="btn-reset-sys" class="bg-white/5 text-white text-xs font-bold py-1.5 rounded hover:bg-red-900/30">EMERGENCY SYSTEM RESET</button>
+        </form>
+    </div>
+
+    <!-- MEDIA DECK -->
+    <div id="media-deck" class="glass">
+        <div class="flex justify-between items-center p-2 border-b border-white/10 bg-black/40">
+            <span class="text-xs font-bold text-cyan" style="color:var(--neon-cyan)">MEDIA DECK</span>
+            <button id="btn-close-deck" class="text-gray hover:text-white text-lg font-bold">&times;</button>
+        </div>
+        <div class="p-4">
+            <div class="flex gap-1 mb-3 bg-white/5 p-1 rounded">
+                <div class="flex-1 text-center py-1 bg-white/10 text-purple text-[10px] font-bold rounded cursor-default" style="color:var(--neon-purple)">VIDEO</div>
+                <div class="flex-1 text-center py-1 text-gray text-[10px] font-bold cursor-pointer hover:text-white">RADIO</div>
+            </div>
+            <div class="border border-dashed border-white/10 p-4 rounded bg-black/50 text-center">
+                <p class="text-[10px] text-gray mb-2 font-mono">Uplink Status: STANDBY</p>
+                <button class="bg-purple-600 text-white text-[10px] font-bold py-2 px-4 rounded w-full flex items-center justify-center gap-2" style="background:#9333ea">
+                    <span>INITIALIZE BROADCAST</span>
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- CODE EDITOR OVERLAY -->
-    <div id="code-editor-overlay" class="hidden-ui">
-        <div class="h-12 border-b border-white/10 flex items-center justify-between px-4 bg-[#0d1117]">
+    <!-- IDE OVERLAY -->
+    <div id="code-editor-overlay" class="hidden">
+        <div class="editor-toolbar">
             <div class="flex gap-2">
-                <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
-                <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
-                <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+                <div style="width:12px;height:12px;border-radius:50%;background:#ef4444"></div>
+                <div style="width:12px;height:12px;border-radius:50%;background:#f59e0b"></div>
+                <div style="width:12px;height:12px;border-radius:50%;background:#22c55e"></div>
             </div>
-            <span class="text-xs text-gray-400 font-mono tracking-widest">SYSTEM_EDITOR_V3.0</span>
+            <span class="text-gray text-xs font-mono">SYSTEM_EDITOR_V3.0</span>
             <div class="flex gap-2">
-                 <button id="btn-run-preview" class="text-[10px] bg-black border border-white/20 hover:bg-white hover:text-black rounded px-2 transition-colors font-mono font-bold">RUN PREVIEW</button>
-                 <button id="btn-close-ide" class="text-white hover:text-red-400 font-bold text-lg px-2">×</button>
+                 <button id="btn-run-preview" class="text-[10px] bg-black border border-white/20 hover:bg-white hover:text-black px-2 rounded font-mono font-bold">RUN PREVIEW</button>
+                 <button id="btn-close-ide" class="text-white hover:text-red-400 font-bold text-lg px-2">&times;</button>
             </div>
         </div>
-        
-        <div class="editor-body">
+        <div class="editor-layout">
             <textarea id="code-area" spellcheck="false" placeholder="// Write code here..."></textarea>
-            
-            <div id="copilot-sidebar" class="copilot-sidebar flex flex-col">
-                <div class="h-10 border-b border-white/5 flex items-center px-4 bg-[#0d1117]">
-                    <span class="text-cyan-400 text-xs font-bold flex items-center gap-2">
-                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/></svg>
-                        COPILOT
-                    </span>
-                </div>
-                <div id="copilot-chat" class="flex-1 overflow-y-auto p-4 space-y-3 text-xs font-mono">
-                    <div class="text-gray-500 italic text-center mt-4 text-[10px]">> SYSTEM READY. WAITING FOR INPUT...</div>
-                </div>
-                <div class="p-3 bg-[#0d1117] border-t border-white/5">
-                    <textarea id="copilot-input" class="w-full bg-black/50 border border-white/10 rounded p-2 text-white text-xs focus:border-cyan-500 outline-none resize-none font-mono" rows="2" placeholder="Type instructions..."></textarea>
-                    <button id="btn-gen-code" class="w-full mt-2 bg-cyan-700 hover:bg-cyan-600 text-white text-[10px] font-bold py-1.5 rounded transition-colors font-mono">GENERATE CODE</button>
-                </div>
-            </div>
-
             <div id="preview-area">
-                <div class="absolute top-2 right-2 z-10 flex gap-2">
-                    <button id="btn-hide-preview" class="bg-red-600 text-white text-[9px] px-2 py-1 rounded font-bold">CLOSE</button>
-                </div>
-                <iframe id="preview-frame" title="Preview"></iframe>
+                <button id="btn-hide-preview" class="absolute top-2 right-2 bg-red-600 text-white text-[9px] px-2 py-1 rounded font-bold z-20">CLOSE</button>
+                <iframe id="preview-frame" style="width:100%;height:100%;border:none;"></iframe>
             </div>
         </div>
     </div>
 
-    <!-- MAIN APPLICATION SCRIPT -->
-<script type="module">
-    import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
-    import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify/dist/purify.es.mjs';
+    <!-- MAIN APPLICATION SCRIPT (ES6 MODULES) -->
+    <script type="module">
+        // IMPORTS FROM CDN (No local build required)
+        import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
+        import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify/dist/purify.es.mjs';
 
-    const CONFIG = {
-        STORAGE_KEY: 'termos_groq_api_key',
-        // Switched to 'llama3-8b-8192' for stability, 
-        // or keep 'llama3-70b-8192' but ensure history is trimmed.
-        // 'mixtral-8x7b-32768' has 32k context if you need longer chats.
-        DEFAULT_MODEL: 'llama3-70b-8192', 
-        MAX_HISTORY: 10 // Keep only the last 10 messages to save tokens
-    };
+        // --- CONFIG & STATE ---
+        const CONFIG = {
+            STORAGE_KEY: 'termos_groq_api_key',
+            // FIX: Updated to llama-3.1-8b-instant (Llama 3.1 family, highly available)
+            DEFAULT_MODEL: 'llama-3.1-8b-instant', 
+            MAX_HISTORY: 10
+        };
 
-    const state = {
-        apiKey: localStorage.getItem(CONFIG.STORAGE_KEY),
-        chatHistory: [
-            { role: "system", content: "You are a helpful Cyberpunk AI assistant for TermOS. Keep answers concise." }
-        ]
-    };
+        const state = {
+            apiKey: localStorage.getItem(CONFIG.STORAGE_KEY),
+            chatHistory: [
+                { role: "system", content: "You are a helpful Cyberpunk AI assistant for TermOS. Keep answers concise." }
+            ]
+        };
 
-    // DOM Elements
-    const chatForm = document.getElementById('chat-form');
-    const userInput = document.getElementById('user-input');
-    const chatContainer = document.getElementById('chat-container');
-    const adminPanel = document.getElementById('admin-panel');
-    const adminForm = document.getElementById('admin-form');
-    const apiKeyInput = document.getElementById('api-key-input');
-    const apiStatusDot = document.getElementById('api-status-dot');
-    const btnAdmin = document.getElementById('btn-admin');
+        // --- DOM ELEMENTS ---
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const chatContainer = document.getElementById('chat-container');
+        const adminPanel = document.getElementById('admin-panel');
+        const adminForm = document.getElementById('admin-form');
+        const apiKeyInput = document.getElementById('api-key-input');
+        const apiStatusDot = document.getElementById('api-status-dot');
+        const btnAdmin = document.getElementById('btn-admin');
+        
+        // IDE Elements
+        const btnIde = document.getElementById('btn-ide');
+        const ideOverlay = document.getElementById('code-editor-overlay');
+        const btnCloseIde = document.getElementById('btn-close-ide');
+        const codeArea = document.getElementById('code-area');
+        const btnRunPreview = document.getElementById('btn-run-preview');
+        const previewArea = document.getElementById('preview-area');
+        const previewFrame = document.getElementById('preview-frame');
+        const btnHidePreview = document.getElementById('btn-hide-preview');
 
-    // Helper: Trim History to prevent "length" errors
-    function trimHistory() {
-        // Always keep the system prompt (index 0)
-        // Keep only the last MAX_HISTORY messages
-        if (state.chatHistory.length > CONFIG.MAX_HISTORY + 1) {
-            state.chatHistory = [
-                state.chatHistory[0],
-                ...state.chatHistory.slice(-(CONFIG.MAX_HISTORY))
-            ];
-        }
-    }
+        // Media Deck Elements
+        const btnMediaDeck = document.getElementById('btn-media-deck');
+        const mediaDeck = document.getElementById('media-deck');
+        const btnCloseDeck = document.getElementById('btn-close-deck');
 
-    async function getAIResponse(prompt) {
-        if (!state.apiKey) throw new Error("API Key missing.");
+        // --- BOOT SEQUENCE ---
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const bootScreen = document.getElementById('boot-screen');
+                bootScreen.style.transition = 'opacity 1s ease';
+                bootScreen.style.opacity = '0';
+                setTimeout(() => bootScreen.remove(), 1000);
+            }, 2000);
+        });
 
-        // 1. Add new user message
-        state.chatHistory.push({ role: "user", content: prompt });
+        // --- UI TOGGLES ---
+        btnAdmin.addEventListener('click', () => {
+            adminPanel.classList.toggle('hidden');
+            if(!adminPanel.classList.contains('hidden')) apiKeyInput.value = state.apiKey || '';
+        });
 
-        // 2. Check and Trim History BEFORE sending (Fixes "length" error)
-        trimHistory();
+        btnIde.addEventListener('click', () => ideOverlay.classList.remove('hidden'));
+        btnCloseIde.addEventListener('click', () => ideOverlay.classList.add('hidden'));
 
-        try {
-            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                method: "POST",
-                headers: { 
-                    "Authorization": `Bearer ${state.apiKey}`, 
-                    "Content-Type": "application/json" 
-                },
-                body: JSON.stringify({
-                    model: CONFIG.DEFAULT_MODEL,
-                    messages: state.chatHistory,
-                    temperature: 0.6
-                })
-            });
+        btnMediaDeck.addEventListener('click', () => mediaDeck.classList.toggle('active'));
+        btnCloseDeck.addEventListener('click', () => mediaDeck.classList.remove('active'));
 
-            const data = await response.json();
+        // --- IDE LOGIC ---
+        btnRunPreview.addEventListener('click', () => {
+            const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+            doc.open();
+            doc.write(codeArea.value);
+            doc.close();
+            previewArea.classList.add('show');
+        });
+        btnHidePreview.addEventListener('click', () => previewArea.classList.remove('show'));
 
-            if (!response.ok) {
-                // Log the exact error to console (F12) to debug
-                console.error("Groq API Error:", data);
-                
-                // Handle specific length error
-                if (data.error && (data.error.message.includes('length') || data.error.type === 'invalid_request_error')) {
-                    throw new Error("Context limit reached. Memory wiped.");
-                }
-                throw new Error(data.error?.message || "API Connection Failed");
-            }
+        // --- CHAT LOGIC ---
+
+        function addMessage(html, isUser = false) {
+            const div = document.createElement('div');
+            div.className = `message ${isUser ? 'user' : 'ai'}`;
             
-            const content = data.choices[0].message.content;
-            state.chatHistory.push({ role: "assistant", content: content });
-            return DOMPurify.sanitize(marked.parse(content));
-
-        } catch (error) {
-            // If it was a length error, clear history to recover
-            if (error.message.includes('Context limit')) {
-                state.chatHistory = [state.chatHistory[0]]; // Reset to system prompt only
-            }
-            throw error;
-        }
-    }
-
-    function addMessage(html, isUser = false) {
-        const div = document.createElement('div');
-        div.className = `flex gap-3 max-w-3xl ${isUser ? 'ml-auto flex-row-reverse' : ''} animate-fade-in`;
-        
-        const avatar = isUser 
-            ? `<div class="w-8 h-8 rounded bg-gray-700 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white">U</div>`
-            : `<div class="w-8 h-8 rounded bg-gradient-to-br from-neon-purple to-blue-600 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white">AI</div>`;
-
-        const bubbleClass = isUser 
-            ? 'bg-purple-900/40 text-purple-100 rounded-tl-xl rounded-bl-xl rounded-br-xl border border-purple-500/20' 
-            : 'glass-panel text-gray-300 rounded-tr-xl rounded-br-xl rounded-bl-xl border border-white/5';
-
-        div.innerHTML = `${avatar}<div class="${bubbleClass} p-4 text-sm leading-relaxed shadow-lg prose prose-invert max-w-none">${html}</div>`;
-        chatContainer.appendChild(div);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-        
-        div.querySelectorAll('pre code').forEach((block) => hljs.highlightElement(block));
-    }
-
-    chatForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const text = userInput.value.trim();
-        if (!text) return;
-
-        userInput.value = '';
-        addMessage(text, true);
-
-        if (text.startsWith('/ai') || text.startsWith('/')) {
-            // Remove command slash for AI
-            const prompt = text.replace(/^\/(ai)?\s*/, '').trim();
-            if (!prompt) return; // Empty command
-
-            // Add temporary loading message
-            const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'flex gap-3 text-xs text-cyan-400 font-mono animate-pulse mt-2';
-            loadingDiv.innerHTML = `<div class="w-8"></div><div>>> TRANSMITTING DATA...</div>`;
-            chatContainer.appendChild(loadingDiv);
+            const avatar = isUser ? 'U' : 'AI';
+            const avatarClass = isUser ? 'user' : 'ai';
+            
+            // Using 'bubble' class for consistent styling
+            div.innerHTML = `
+                <div class="avatar ${avatarClass}">${avatar}</div>
+                <div class="bubble ${isUser ? '' : 'glass'}">${html}</div>
+            `;
+            chatContainer.appendChild(div);
             chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            // Highlight code blocks after injection
+            div.querySelectorAll('pre code').forEach((block) => {
+                if(window.hljs) window.hljs.highlightElement(block);
+            });
+        }
+
+        async function getAIResponse(prompt) {
+            if (!state.apiKey) throw new Error("API Key missing. Configure in Admin Panel.");
+
+            state.chatHistory.push({ role: "user", content: prompt });
+
+            // Trim history
+            if (state.chatHistory.length > CONFIG.MAX_HISTORY + 1) {
+                state.chatHistory = [state.chatHistory[0], ...state.chatHistory.slice(-(CONFIG.MAX_HISTORY))];
+            }
 
             try {
-                const response = await getAIResponse(prompt);
-                loadingDiv.remove(); // Remove loading
-                addMessage(response);
-            } catch (err) {
-                loadingDiv.remove();
-                console.error(err);
-                addMessage(`<span class="text-red-400 font-bold">SYSTEM ERROR:</span> <span class="text-gray-300">${err.message}</span>`);
+                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: { 
+                        "Authorization": `Bearer ${state.apiKey}`, 
+                        "Content-Type": "application/json" 
+                    },
+                    body: JSON.stringify({
+                        model: CONFIG.DEFAULT_MODEL,
+                        messages: state.chatHistory,
+                        temperature: 0.6
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    console.error("Groq API Error:", data);
+                    if (data.error?.message.includes('length')) throw new Error("Context limit reached. Memory wiped.");
+                    throw new Error(data.error?.message || "API Connection Failed");
+                }
+                
+                const content = data.choices[0].message.content;
+                state.chatHistory.push({ role: "assistant", content: content });
+                
+                // Use imported modules
+                return DOMPurify.sanitize(marked.parse(content));
+
+            } catch (error) {
+                if (error.message.includes('Context limit')) {
+                    state.chatHistory = [state.chatHistory[0]];
+                }
+                throw error;
             }
-        } else {
-            addMessage("Command unknown. Use /ai to chat.");
         }
-    });
 
-    // Admin & Status Logic (Same as before)
-    btnAdmin.addEventListener('click', () => {
-        adminPanel.classList.toggle('hidden');
-        if(!adminPanel.classList.contains('hidden')) apiKeyInput.value = state.apiKey || '';
-    });
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Essential to stop reload
+            const text = userInput.value.trim();
+            if (!text) return;
 
-    adminForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const key = apiKeyInput.value.trim();
-        if (key) {
-            localStorage.setItem(CONFIG.STORAGE_KEY, key);
-            state.apiKey = key;
-            apiStatusDot.className = "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]";
-            adminPanel.classList.add('hidden');
-            addMessage(">> API KEY SAVED. NEURAL LINK ESTABLISHED.");
-        }
-    });
+            userInput.value = '';
+            addMessage(text, true);
 
-    if (state.apiKey) {
-        apiStatusDot.className = "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]";
-    }
+            // Basic command parsing
+            if (text.startsWith('/ai') || text.startsWith('/')) {
+                const prompt = text.replace(/^\/(ai)?\s*/, '').trim();
+                if (!prompt) return;
 
-    // Galaxy Canvas
-    const canvas = document.getElementById('galaxy-canvas');
-    const ctx = canvas.getContext('2d');
-    let width, height, stars = [];
-    function resize() {
-        width = canvas.width = window.innerWidth;
-        height = canvas.height = window.innerHeight;
-        stars = Array.from({length: 150}, () => ({
-            x: Math.random() * width, y: Math.random() * height,
-            size: Math.random() * 2, speed: Math.random() * 0.5 + 0.1
-        }));
-    }
-    function animate() {
-        ctx.fillStyle = '#050505'; ctx.fillRect(0,0,width,height);
-        ctx.fillStyle = '#fff';
-        stars.forEach(s => {
-            ctx.globalAlpha = Math.random() * 0.5 + 0.5;
-            ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, Math.PI*2); ctx.fill();
-            s.y -= s.speed; if(s.y < 0) s.y = height;
+                // Loading State
+                const loadingId = 'loading-' + Date.now();
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'message ai';
+                loadingDiv.innerHTML = `<div class="avatar ai">AI</div><div class="bubble glass text-xs font-mono text-cyan" style="color:var(--neon-cyan)">>> TRANSMITTING DATA...</div>`;
+                chatContainer.appendChild(loadingDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+
+                try {
+                    const response = await getAIResponse(prompt);
+                    loadingDiv.remove(); // Remove loading indicator
+                    addMessage(response);
+                } catch (err) {
+                    loadingDiv.remove();
+                    console.error(err);
+                    addMessage(`<span style="color:#ef4444;font-weight:bold">SYSTEM ERROR:</span> <span style="color:#e5e5e5">${err.message}</span>`);
+                }
+            } else {
+                addMessage("Command unknown. Type <code>/ai</code> before your message.");
+            }
         });
-        requestAnimationFrame(animate);
-    }
-    window.addEventListener('resize', resize); resize(); animate();
-</script>
+
+        // --- ADMIN FORM LOGIC ---
+        adminForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const key = apiKeyInput.value.trim();
+            if (key) {
+                localStorage.setItem(CONFIG.STORAGE_KEY, key);
+                state.apiKey = key;
+                apiStatusDot.style.background = "#22c55e"; // Green
+                apiStatusDot.style.boxShadow = "0 0 8px #22c55e";
+                adminPanel.classList.add('hidden');
+                addMessage(">> API KEY SAVED. NEURAL LINK ESTABLISHED.");
+            }
+        });
+
+        if (state.apiKey) {
+            apiStatusDot.style.background = "#22c55e";
+            apiStatusDot.style.boxShadow = "0 0 8px #22c55e";
+        }
+
+        document.getElementById('btn-reset-sys').addEventListener('click', () => {
+            localStorage.removeItem(CONFIG.STORAGE_KEY);
+            location.reload();
+        });
+
+        // --- GALAXY CANVAS ---
+        const canvas = document.getElementById('galaxy-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, stars = [];
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            stars = Array.from({length: 150}, () => ({
+                x: Math.random() * width, y: Math.random() * height,
+                size: Math.random() * 2, speed: Math.random() * 0.5 + 0.1
+            }));
+        }
+        function animate() {
+            ctx.fillStyle = '#050505'; ctx.fillRect(0,0,width,height);
+            ctx.fillStyle = '#fff';
+            stars.forEach(s => {
+                ctx.globalAlpha = Math.random() * 0.5 + 0.5;
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, Math.PI*2); ctx.fill();
+                s.y -= s.speed; if(s.y < 0) s.y = height;
+            });
+            requestAnimationFrame(animate);
+        }
+        window.addEventListener('resize', resize); resize(); animate();
+    </script>
 </body>
 </html>
