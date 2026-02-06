@@ -276,105 +276,58 @@
     </div>
 
     <!-- MAIN APPLICATION SCRIPT -->
-    <script type="module">
-        // ==========================================
-        // CONFIGURATION (Fixed missing config.js)
-        // ==========================================
-        const CONFIG = {
-            STORAGE_KEY: 'termos_groq_api_key',
-            DEFAULT_MODEL: 'llama3-70b-8192'
-        };
+<script type="module">
+    import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
+    import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify/dist/purify.es.mjs';
 
-        // ==========================================
-        // IMPORTS (Fixed ESM imports)
-        // ==========================================
-        import { marked } from 'https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js';
-        import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify/dist/purify.es.mjs';
+    const CONFIG = {
+        STORAGE_KEY: 'termos_groq_api_key',
+        // Switched to 'llama3-8b-8192' for stability, 
+        // or keep 'llama3-70b-8192' but ensure history is trimmed.
+        // 'mixtral-8x7b-32768' has 32k context if you need longer chats.
+        DEFAULT_MODEL: 'llama3-70b-8192', 
+        MAX_HISTORY: 10 // Keep only the last 10 messages to save tokens
+    };
 
-        // ==========================================
-        // STATE
-        // ==========================================
-        const state = {
-            apiKey: localStorage.getItem(CONFIG.STORAGE_KEY),
-            isMediaDeckOpen: false,
-            isIDEOpen: false,
-            isAdminOpen: false,
-            chatHistory: [
-                { role: "system", content: "You are a helpful AI assistant in a Cyberpunk Terminal OS called TermOS. Be concise, technical, and cool." }
-            ]
-        };
+    const state = {
+        apiKey: localStorage.getItem(CONFIG.STORAGE_KEY),
+        chatHistory: [
+            { role: "system", content: "You are a helpful Cyberpunk AI assistant for TermOS. Keep answers concise." }
+        ]
+    };
 
-        // ==========================================
-        // DOM ELEMENTS
-        // ==========================================
-        const els = {
-            bootScreen: document.getElementById('boot-screen'),
-            chatContainer: document.getElementById('chat-container'),
-            userInput: document.getElementById('user-input'),
-            sendBtn: document.getElementById('send-btn'),
-            mediaDeck: document.getElementById('media-deck'),
-            adminPanel: document.getElementById('admin-panel'),
-            ideOverlay: document.getElementById('code-editor-overlay'),
-            codeArea: document.getElementById('code-area'),
-            previewFrame: document.getElementById('preview-frame'),
-            previewArea: document.getElementById('preview-area'),
-            apiKeyInput: document.getElementById('api-key-input'),
-            apiStatusDot: document.getElementById('api-status-dot'),
-            copilotChat: document.getElementById('copilot-chat'),
-            copilotInput: document.getElementById('copilot-input')
-        };
+    // DOM Elements
+    const chatForm = document.getElementById('chat-form');
+    const userInput = document.getElementById('user-input');
+    const chatContainer = document.getElementById('chat-container');
+    const adminPanel = document.getElementById('admin-panel');
+    const adminForm = document.getElementById('admin-form');
+    const apiKeyInput = document.getElementById('api-key-input');
+    const apiStatusDot = document.getElementById('api-status-dot');
+    const btnAdmin = document.getElementById('btn-admin');
 
-        // ==========================================
-        // GALAXY BACKGROUND (Canvas)
-        // ==========================================
-        function initGalaxy() {
-            const canvas = document.getElementById('galaxy-canvas');
-            const ctx = canvas.getContext('2d');
-            let width, height, stars = [];
-
-            function resize() {
-                width = canvas.width = window.innerWidth;
-                height = canvas.height = window.innerHeight;
-                stars = [];
-                for(let i=0; i<200; i++) {
-                    stars.push({
-                        x: Math.random() * width,
-                        y: Math.random() * height,
-                        size: Math.random() * 2,
-                        speed: Math.random() * 0.5 + 0.1
-                    });
-                }
-            }
-            
-            function animate() {
-                ctx.fillStyle = '#050505';
-                ctx.fillRect(0, 0, width, height);
-                ctx.fillStyle = '#ffffff';
-                stars.forEach(star => {
-                    ctx.globalAlpha = Math.random() * 0.5 + 0.5;
-                    ctx.beginPath();
-                    ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-                    ctx.fill();
-                    star.y -= star.speed;
-                    if(star.y < 0) star.y = height;
-                });
-                requestAnimationFrame(animate);
-            }
-
-            window.addEventListener('resize', resize);
-            resize();
-            animate();
+    // Helper: Trim History to prevent "length" errors
+    function trimHistory() {
+        // Always keep the system prompt (index 0)
+        // Keep only the last MAX_HISTORY messages
+        if (state.chatHistory.length > CONFIG.MAX_HISTORY + 1) {
+            state.chatHistory = [
+                state.chatHistory[0],
+                ...state.chatHistory.slice(-(CONFIG.MAX_HISTORY))
+            ];
         }
+    }
 
-        // ==========================================
-        // AI LOGIC (Fixed ai.js)
-        // ==========================================
-        async function getAIResponse(prompt) {
-            if (!state.apiKey) throw new Error("API Key missing. Check Admin Panel.");
+    async function getAIResponse(prompt) {
+        if (!state.apiKey) throw new Error("API Key missing.");
 
-            // Update history
-            state.chatHistory.push({ role: "user", content: prompt });
+        // 1. Add new user message
+        state.chatHistory.push({ role: "user", content: prompt });
 
+        // 2. Check and Trim History BEFORE sending (Fixes "length" error)
+        trimHistory();
+
+        try {
             const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
                 headers: { 
@@ -389,201 +342,129 @@
             });
 
             const data = await response.json();
-            if (!response.ok) throw new Error(data.error?.message || "API Error");
+
+            if (!response.ok) {
+                // Log the exact error to console (F12) to debug
+                console.error("Groq API Error:", data);
+                
+                // Handle specific length error
+                if (data.error && (data.error.message.includes('length') || data.error.type === 'invalid_request_error')) {
+                    throw new Error("Context limit reached. Memory wiped.");
+                }
+                throw new Error(data.error?.message || "API Connection Failed");
+            }
             
             const content = data.choices[0].message.content;
             state.chatHistory.push({ role: "assistant", content: content });
-            
             return DOMPurify.sanitize(marked.parse(content));
-        }
 
-        // ==========================================
-        // UI FUNCTIONS
-        // ==========================================
-        function addMessage(html, isUser = false) {
-            const div = document.createElement('div');
-            div.className = `flex gap-3 max-w-3xl ${isUser ? 'ml-auto flex-row-reverse' : ''} animate-fade-in-up`;
-            
-            const avatar = isUser 
-                ? `<div class="w-8 h-8 rounded bg-gray-700 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white">U</div>`
-                : `<div class="w-8 h-8 rounded bg-gradient-to-br from-purple-500 to-blue-600 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white">AI</div>`;
-
-            const bubbleClass = isUser 
-                ? 'bg-purple-900/40 text-purple-100 rounded-tl-xl rounded-bl-xl rounded-br-xl border border-purple-500/20' 
-                : 'glass-panel text-gray-300 rounded-tr-xl rounded-br-xl rounded-bl-xl border border-white/5';
-
-            div.innerHTML = `
-                ${avatar}
-                <div class="${bubbleClass} p-4 text-sm leading-relaxed shadow-lg prose prose-invert max-w-none">
-                    ${html}
-                </div>
-            `;
-            
-            els.chatContainer.appendChild(div);
-            els.chatContainer.scrollTop = els.chatContainer.scrollHeight;
-            
-            // Highlight code blocks if any
-            div.querySelectorAll('pre code').forEach((block) => {
-                hljs.highlightElement(block);
-            });
-        }
-
-        async function handleCommand() {
-            const text = els.userInput.value.trim();
-            if (!text) return;
-
-            els.userInput.value = '';
-            
-            // Check for commands
-            if (text.startsWith('/')) {
-                const [cmd, ...args] = text.split(' ');
-                if (cmd === '/clear') {
-                    els.chatContainer.innerHTML = '';
-                    return;
-                }
-                if (cmd === '/ai') {
-                    const prompt = args.join(' ');
-                    addMessage(prompt, true);
-                    
-                    // Loading state
-                    const loadingId = 'loading-' + Date.now();
-                    const loadingDiv = document.createElement('div');
-                    loadingDiv.id = loadingId;
-                    loadingDiv.className = 'flex gap-3 max-w-3xl';
-                    loadingDiv.innerHTML = `<div class="w-8 h-8"></div><div class="text-cyan-400 text-xs font-mono mt-4 animate-pulse">>> PROCESSING NEURAL DATA...</div>`;
-                    els.chatContainer.appendChild(loadingDiv);
-                    els.chatContainer.scrollTop = els.chatContainer.scrollHeight;
-
-                    try {
-                        const response = await getAIResponse(prompt);
-                        document.getElementById(loadingId).remove();
-                        addMessage(response);
-                    } catch (err) {
-                        document.getElementById(loadingId).remove();
-                        addMessage(`<span class="text-red-400">>> ERROR: ${err.message}</span>`);
-                    }
-                    return;
-                }
+        } catch (error) {
+            // If it was a length error, clear history to recover
+            if (error.message.includes('Context limit')) {
+                state.chatHistory = [state.chatHistory[0]]; // Reset to system prompt only
             }
-
-            // Regular Chat
-            addMessage(text, true);
-            setTimeout(() => {
-                addMessage(`<span class="text-gray-500 italic">Command received. Use /ai to talk to the neural network.</span>`);
-            }, 500);
+            throw error;
         }
+    }
 
-        // ==========================================
-        // EVENT LISTENERS
-        // ==========================================
-        function initEvents() {
-            // Send
-            els.sendBtn.addEventListener('click', handleCommand);
-            els.userInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') handleCommand();
-            });
+    function addMessage(html, isUser = false) {
+        const div = document.createElement('div');
+        div.className = `flex gap-3 max-w-3xl ${isUser ? 'ml-auto flex-row-reverse' : ''} animate-fade-in`;
+        
+        const avatar = isUser 
+            ? `<div class="w-8 h-8 rounded bg-gray-700 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white">U</div>`
+            : `<div class="w-8 h-8 rounded bg-gradient-to-br from-neon-purple to-blue-600 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white">AI</div>`;
 
-            // Media Deck
-            document.getElementById('btn-media-deck').addEventListener('click', () => {
-                state.isMediaDeckOpen = !state.isMediaDeckOpen;
-                els.mediaDeck.classList.toggle('active', state.isMediaDeckOpen);
-            });
-            document.getElementById('btn-close-deck').addEventListener('click', () => {
-                els.mediaDeck.classList.remove('active');
-                state.isMediaDeckOpen = false;
-            });
+        const bubbleClass = isUser 
+            ? 'bg-purple-900/40 text-purple-100 rounded-tl-xl rounded-bl-xl rounded-br-xl border border-purple-500/20' 
+            : 'glass-panel text-gray-300 rounded-tr-xl rounded-br-xl rounded-bl-xl border border-white/5';
 
-            // Admin
-            document.getElementById('btn-admin').addEventListener('click', () => {
-                state.isAdminOpen = !state.isAdminOpen;
-                els.adminPanel.classList.toggle('hidden-ui', !state.isAdminOpen);
-                if(state.isAdminOpen) els.apiKeyInput.value = state.apiKey || '';
-            });
+        div.innerHTML = `${avatar}<div class="${bubbleClass} p-4 text-sm leading-relaxed shadow-lg prose prose-invert max-w-none">${html}</div>`;
+        chatContainer.appendChild(div);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        
+        div.querySelectorAll('pre code').forEach((block) => hljs.highlightElement(block));
+    }
 
-            document.getElementById('btn-save-api').addEventListener('click', () => {
-                const key = els.apiKeyInput.value.trim();
-                if (key) {
-                    localStorage.setItem(CONFIG.STORAGE_KEY, key);
-                    state.apiKey = key;
-                    els.apiStatusDot.className = "w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]";
-                    els.adminPanel.classList.add('hidden-ui');
-                    addMessage(`>> API KEY UPDATED. NEURAL LINK ESTABLISHED.`);
-                }
-            });
+    chatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = userInput.value.trim();
+        if (!text) return;
 
-            // IDE
-            document.getElementById('btn-ide').addEventListener('click', () => {
-                state.isIDEOpen = true;
-                els.ideOverlay.classList.remove('hidden-ui');
-            });
-            document.getElementById('btn-close-ide').addEventListener('click', () => {
-                state.isIDEOpen = false;
-                els.ideOverlay.classList.add('hidden-ui');
-            });
+        userInput.value = '';
+        addMessage(text, true);
 
-            // Preview
-            document.getElementById('btn-run-preview').addEventListener('click', () => {
-                const code = els.codeArea.value;
-                const doc = els.previewFrame.contentWindow.document;
-                doc.open();
-                doc.write(code);
-                doc.close();
-                els.previewArea.classList.add('show');
-            });
-            document.getElementById('btn-hide-preview').addEventListener('click', () => {
-                els.previewArea.classList.remove('show');
-            });
+        if (text.startsWith('/ai') || text.startsWith('/')) {
+            // Remove command slash for AI
+            const prompt = text.replace(/^\/(ai)?\s*/, '').trim();
+            if (!prompt) return; // Empty command
 
-            // Copilot Mock
-            document.getElementById('btn-gen-code').addEventListener('click', () => {
-                const req = els.copilotInput.value;
-                if(!req) return;
-                
-                const msg = document.createElement('div');
-                msg.className = "text-cyan-400 text-[10px] mb-2";
-                msg.innerText = `> ${req}`;
-                els.copilotChat.appendChild(msg);
+            // Add temporary loading message
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'flex gap-3 text-xs text-cyan-400 font-mono animate-pulse mt-2';
+            loadingDiv.innerHTML = `<div class="w-8"></div><div>>> TRANSMITTING DATA...</div>`;
+            chatContainer.appendChild(loadingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
 
-                const resp = document.createElement('div');
-                resp.className = "text-gray-400 text-[10px] font-mono whitespace-pre-wrap mb-2 border-l-2 border-purple-500 pl-2";
-                resp.innerText = "// Generating code snippet...\n// Placeholder: This is where the AI would inject code based on your request.";
-                els.copilotChat.appendChild(resp);
-                els.copilotChat.scrollTop = els.copilotChat.scrollHeight;
-                els.copilotInput.value = '';
-            });
-        }
-
-        // ==========================================
-        // BOOT SEQUENCE
-        // ==========================================
-        window.addEventListener('DOMContentLoaded', () => {
-            initGalaxy();
-            initEvents();
-            
-            // Check API Key status on load
-            if (state.apiKey) {
-                els.apiStatusDot.className = "w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]";
+            try {
+                const response = await getAIResponse(prompt);
+                loadingDiv.remove(); // Remove loading
+                addMessage(response);
+            } catch (err) {
+                loadingDiv.remove();
+                console.error(err);
+                addMessage(`<span class="text-red-400 font-bold">SYSTEM ERROR:</span> <span class="text-gray-300">${err.message}</span>`);
             }
+        } else {
+            addMessage("Command unknown. Use /ai to chat.");
+        }
+    });
 
-            // Simulate Boot
-            setTimeout(() => {
-                const txt = document.getElementById('txt-init');
-                txt.innerText = "LOADING MODULES...";
-            }, 800);
-            
-            setTimeout(() => {
-                const txt = document.getElementById('txt-init');
-                txt.innerText = "CONNECTING TO NEURAL NET...";
-                txt.classList.add('text-green-400');
-            }, 1600);
+    // Admin & Status Logic (Same as before)
+    btnAdmin.addEventListener('click', () => {
+        adminPanel.classList.toggle('hidden');
+        if(!adminPanel.classList.contains('hidden')) apiKeyInput.value = state.apiKey || '';
+    });
 
-            setTimeout(() => {
-                els.bootScreen.style.opacity = '0';
-                els.bootScreen.style.transition = 'opacity 1s ease';
-                setTimeout(() => els.bootScreen.remove(), 1000);
-            }, 2500);
+    adminForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const key = apiKeyInput.value.trim();
+        if (key) {
+            localStorage.setItem(CONFIG.STORAGE_KEY, key);
+            state.apiKey = key;
+            apiStatusDot.className = "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]";
+            adminPanel.classList.add('hidden');
+            addMessage(">> API KEY SAVED. NEURAL LINK ESTABLISHED.");
+        }
+    });
+
+    if (state.apiKey) {
+        apiStatusDot.className = "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]";
+    }
+
+    // Galaxy Canvas
+    const canvas = document.getElementById('galaxy-canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height, stars = [];
+    function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        stars = Array.from({length: 150}, () => ({
+            x: Math.random() * width, y: Math.random() * height,
+            size: Math.random() * 2, speed: Math.random() * 0.5 + 0.1
+        }));
+    }
+    function animate() {
+        ctx.fillStyle = '#050505'; ctx.fillRect(0,0,width,height);
+        ctx.fillStyle = '#fff';
+        stars.forEach(s => {
+            ctx.globalAlpha = Math.random() * 0.5 + 0.5;
+            ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, Math.PI*2); ctx.fill();
+            s.y -= s.speed; if(s.y < 0) s.y = height;
         });
-
-    </script>
+        requestAnimationFrame(animate);
+    }
+    window.addEventListener('resize', resize); resize(); animate();
+</script>
 </body>
 </html>
