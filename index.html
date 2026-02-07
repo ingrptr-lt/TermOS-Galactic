@@ -528,8 +528,9 @@
         `;
 
         let currentLang = localStorage.getItem('termos_lang') || 'en';
+        // FIX: Improved unique username generation to prevent user collisions
         let userProfile = {
-            name: localStorage.getItem('termos_username') || 'User_' + Math.floor(Math.random() * 9999),
+            name: localStorage.getItem('termos_username') || 'User_' + Math.random().toString(36).substr(2, 9).toUpperCase(),
             avatar: localStorage.getItem('termos_avatar') || "👤"
         };
         let tempAvatarData = null;
@@ -739,11 +740,10 @@
         }
 
         function startSystem() {
-            // FIX: Always attempt to connect MQTT, regardless of API Key presence
-            // This ensures "Online" status and Guest/User connectivity works immediately
+            // FIX: Always attempt MQTT connection to ensure chat works
             connectMQTT();
             
-            // Only show API warning if key is missing, but don't block connection
+            // Only show API warning if key is missing
             if(!apiKeys[currentProvider]) {
                 setTimeout(() => { addSystemMessage("⚠️ AI OFFLINE (No API Key). Chat Connected.", "warning"); AudioFX.error(); toggleAdmin(); }, 1000);
             }
@@ -1094,29 +1094,49 @@
 
         /* --- MQTT --- */
         function connectMQTT() {
-            if (typeof Paho === 'undefined') return;
+            if (typeof Paho === 'undefined') {
+                console.error("Paho MQTT library not loaded.");
+                return;
+            }
             const clientId = "termos_flagship_" + Math.random().toString(16).substr(2, 8);
             mqttClient = new Paho.MQTT.Client("broker.emqx.io", 8084, "/mqtt", clientId);
+            
             mqttClient.onConnectionLost = (responseObject) => { 
-                if (responseObject.errorCode !== 0) updateStatus(false); 
+                if (responseObject.errorCode !== 0) {
+                    console.error("MQTT Lost:", responseObject.errorMessage);
+                    updateStatus(false); 
+                }
             };
+            
             mqttClient.onMessageArrived = (message) => {
                 try {
                     const payload = JSON.parse(message.payloadString);
                     const sender = payload.user;
+                    console.log("MQTT Received:", payload); // DEBUGGING LOG
+                    
+                    // FIX: Ensure unique names so this filter works correctly
                     if (sender === userProfile.name) return;
-                    if (payload.type === 'chat') { AudioFX.receive(); addUserMessage(payload.text, false, sender, payload.avatar); }
+                    
+                    if (payload.type === 'chat') { 
+                        AudioFX.receive(); 
+                        addUserMessage(payload.text, false, sender, payload.avatar); 
+                    }
                     if (payload.type === 'join') addSystemMessage(`${sender} entered sector.`, "info");
-                } catch(e) { console.error(e); }
+                } catch(e) { console.error("MQTT Parse Error", e); }
             };
+            
             const options = {
                 timeout: 5, useSSL: true,
                 onSuccess: () => {
                     mqttClient.subscribe("termos/public", { qos: 1 });
                     updateStatus(true);
+                    // Send join message so others know we are here
                     mqttClient.send(new Paho.MQTT.Message(JSON.stringify({ type: 'join', user: userProfile.name, avatar: userProfile.avatar })));
                 },
-                onFailure: () => { updateStatus(false); }
+                onFailure: (errorMessage) => {
+                    console.error("MQTT Connect Failed:", errorMessage.errorMessage);
+                    updateStatus(false); 
+                }
             };
             mqttClient.connect(options);
         }
