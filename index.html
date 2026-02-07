@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>TermOS: Galactic [Ultimate] + DevOps</title>
+    <title>TermOS: Galactic Glass</title>
     
     <!-- PWA / METADATA -->
     <meta name="theme-color" content="#050505">
@@ -14,6 +14,7 @@
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Inter:wght@300;400;600&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <!-- Markdown & Syntax Highlighting -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -22,10 +23,11 @@
 
     <style>
         :root {
-            --glass-bg: rgba(10, 10, 12, 0.85);
-            --glass-border: rgba(168, 85, 247, 0.4);
-            --accent-primary: #d8b4fe;
-            --accent-secondary: #22d3ee;
+            --glass-bg: rgba(20, 20, 30, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --neon-purple: #d946ef;
+            --neon-cyan: #06b6d4;
+            --neon-pink: #ec4899;
             --msg-user-bg: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
             --safe-bottom: env(safe-area-inset-bottom, 20px);
             --font-mono: 'Fira Code', monospace;
@@ -33,27 +35,35 @@
         }
 
         body {
-            background: #000;
+            background: #050505;
             color: #e2e8f0;
             font-family: 'Inter', sans-serif;
             overflow: hidden; 
-            background: radial-gradient(circle at center, #1e1b4b 0%, #000000 100%);
+            background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #1a0b2e);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
             height: 100dvh; 
             width: 100vw;
             touch-action: manipulation;
             -webkit-font-smoothing: antialiased;
         }
 
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        @keyframes gradientBG { 
+            0% { background-position: 0% 50%; } 
+            50% { background-position: 100% 50%; } 
+            100% { background-position: 0% 50%; } 
+        }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 3px; border: 1px solid #000; }
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.5); }
 
         .glass-panel {
             background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(168, 85, 247, 0.05);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 0 20px rgba(168, 85, 247, 0.05);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -65,6 +75,7 @@
             border-color: rgba(168, 85, 247, 0.8);
         }
 
+        /* Scanlines Overlay */
         .scanlines {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -72,251 +83,118 @@
             background-size: 100% 2px, 3px 100%;
             pointer-events: none;
             z-index: 9998;
-            opacity: 0.4;
+            opacity: 0.3;
         }
 
+        /* Animations */
         @keyframes slideUpFade {
             from { opacity: 0; transform: translateY(20px) scale(0.95); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
         .msg-anim { animation: slideUpFade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
         @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 5px var(--accent-primary); }
-            50% { box-shadow: 0 0 20px var(--accent-primary), 0 0 10px var(--accent-secondary); }
+            0%, 100% { box-shadow: 0 0 5px var(--neon-cyan); }
+            50% { box-shadow: 0 0 20px var(--neon-cyan), 0 0 10px var(--neon-purple); }
         }
         .active-ring { animation: pulse-glow 2s infinite; }
 
-        @keyframes glitch {
-            0% { transform: translate(0); }
-            20% { transform: translate(-2px, 2px); }
-            40% { transform: translate(-2px, -2px); }
-            60% { transform: translate(2px, 2px); }
-            80% { transform: translate(2px, -2px); }
-            100% { transform: translate(0); }
-        }
-        .glitch-hover:hover { animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite; color: #f0abfc; }
+        @keyframes float { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-5px)' } }
 
+        /* Boot Screen */
         #boot-screen {
-            position: fixed;
-            inset: 0;
-            background: #000;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            position: fixed; inset: 0; background: #000; z-index: 10000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
             transition: opacity 0.8s ease;
         }
         .loader-ring {
-            width: 80px;
-            height: 80px;
-            border: 4px solid #111;
-            border-top: 4px solid var(--accent-primary);
-            border-right: 4px solid var(--accent-secondary);
-            border-radius: 50%;
-            animation: spin 1.5s linear infinite;
-            box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+            width: 80px; height: 80px; border: 4px solid #111; border-top: 4px solid var(--neon-purple);
+            border-right: 4px solid var(--neon-cyan); border-radius: 50%;
+            animation: spin 1.5s linear infinite; box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .media-overlay {
-            position: fixed;
-            bottom: 90px; 
-            left: 50%;
-            transform: translateX(-50%) translateY(30px);
-            width: 95%;
-            max-width: 600px; 
-            z-index: 40;
-            opacity: 0;
-            pointer-events: none;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .media-overlay.active {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-            pointer-events: auto;
-        }
-        
-        .video-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 10px;
-        }
-        .video-container {
-            background: #000;
-            border-radius: 8px;
-            overflow: hidden;
-            position: relative;
-            aspect-ratio: 16/9;
-            border: 1px solid rgba(168, 85, 247, 0.5);
-            box-shadow: 0 0 15px rgba(168, 85, 247, 0.1);
-        }
-        .video-container.local { border-color: #a855f7; box-shadow: 0 0 20px rgba(168, 85, 247, 0.2); }
-        .video-container.remote { border-color: #06b6d4; box-shadow: 0 0 20px rgba(6, 182, 212, 0.2); }
-        
-        .video-overlay-ui {
-            position: absolute;
-            bottom: 0; left: 0; right: 0;
-            padding: 4px;
-            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        .video-container:hover .video-overlay-ui { opacity: 1; }
-        
-        video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-        
-        .remote-label {
-            background: rgba(0,0,0,0.7);
-            color: #22d3ee;
-            padding: 1px 4px;
-            border-radius: 2px;
-            font-size: 9px;
-            font-family: var(--font-mono);
-            border: 1px solid rgba(34, 211, 238, 0.3);
-        }
+        /* Audio Visualizer Bars */
+        .bar { width: 3px; background: linear-gradient(to top, var(--neon-purple), var(--neon-cyan)); border-radius: 2px; animation: equalize 1s infinite ease-in-out; }
+        .bar:nth-child(1) { animation-delay: -0.4s; height: 15px; }
+        .bar:nth-child(2) { animation-delay: -0.2s; height: 25px; }
+        .bar:nth-child(3) { animation-delay: -0.5s; height: 20px; }
+        .bar:nth-child(4) { animation-delay: -1.0s; height: 30px; }
+        @keyframes equalize { 0% { height: 5px; } 50% { height: 100%; } 100% { height: 5px; } }
 
-        /* RADIO STYLES UPDATED */
-        .radio-genres { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
-        .radio-genres::-webkit-scrollbar { display: none; }
-        .genre-chip {
-            white-space: nowrap; padding: 4px 10px;
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px; font-size: 10px; color: #a5b4fc;
-            cursor: pointer; transition: all 0.2s;
-        }
-        .genre-chip:hover, .genre-chip.active {
-            background: rgba(168, 85, 247, 0.3); border-color: #a855f7;
-            color: white; box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
-        }
-        .station-list { max-height: 250px; overflow-y: auto; margin-top: 10px; }
-        .station-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05);
-            cursor: pointer; transition: background 0.2s;
-        }
-        .station-item:hover { background: rgba(255,255,255,0.05); }
-        .station-item.playing { background: rgba(34, 211, 238, 0.1); border-left: 2px solid #22d3ee; }
-        .station-name { font-size: 11px; color: #e2e8f0; font-weight: 500; }
-        .station-bitrate { font-size: 9px; color: #64748b; font-mono; }
+        /* Range Input */
+        input[type=range] { -webkit-appearance: none; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 12px; width: 12px; border-radius: 50%; background: #fff; cursor: pointer; margin-top: -4px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; }
 
-        /* IDE STYLES */
-        #code-editor-overlay {
-            position: fixed; inset: 0; z-index: 1000; 
-            background: rgba(5, 5, 5, 0.95); display: flex; flex-direction: column; backdrop-filter: blur(10px);
-        }
-        .editor-body { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr 350px; /* Code, Preview, Copilot */
-            flex: 1; 
-            overflow: hidden; 
-            height: 100%; 
-            gap: 1px;
-            background: #333;
-        }
-        @media (max-width: 1024px) {
-            .editor-body { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr 1fr; }
-            #copilot-panel { border-top: 1px solid #333; border-left: none; }
-        }
-        @media (max-width: 768px) {
-            .editor-body { display: flex; flex-direction: column; }
-            #code-area { flex: 0 0 45%; min-height: 250px; }
-            #preview-area { flex: 1; border-top: 1px solid #333; }
-            #copilot-panel { display: none; } /* Hide on very small screens or use toggle */
-        }
-
+        /* Overlays */
+        .hidden-ui { display: none !important; }
+        .flex-ui { display: flex !important; }
+        
+        /* IDE Styles */
+        #code-editor-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(5, 5, 5, 0.98); display: flex; flex-direction: column; backdrop-filter: blur(10px); }
+        .editor-body { display: grid; grid-template-columns: 1fr 1fr 300px; flex: 1; overflow: hidden; gap: 1px; background: #333; }
+        @media (max-width: 1024px) { .editor-body { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr 1fr; } }
+        @media (max-width: 768px) { .editor-body { display: flex; flex-direction: column; } }
         .editor-col { background: #0d1117; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-
-        #code-area {
-            background: #0d1117; color: #c9d1d9; font-family: var(--font-mono);
-            font-size: 13px; padding: 1rem; border: none; resize: none; outline: none;
-            width: 100%; height: 100%; line-height: 1.5; 
-        }
-
+        #code-area { background: #0d1117; color: #c9d1d9; font-family: var(--font-mono); font-size: 13px; padding: 1rem; border: none; resize: none; outline: none; width: 100%; height: 100%; line-height: 1.5; }
         #preview-area { background: #fff; position: relative; }
         #preview-frame { width: 100%; height: 100%; border: none; }
+        #copilot-panel { background: #0d1117; border-left: 1px solid #30363d; display: flex; flex-direction: column; }
+        .copilot-header { padding: 10px; border-bottom: 1px solid #30363d; background: rgba(6, 182, 212, 0.1); color: #22d3ee; font-size: 11px; font-family: var(--font-header); display: flex; justify-content: space-between; }
+        .copilot-chat { flex: 1; overflow-y: auto; padding: 10px; font-size: 12px; color: #c9d1d9; font-family: var(--font-mono); }
+        .copilot-input-area { padding: 10px; border-top: 1px solid #30363d; background: #050505; display: flex; gap: 5px; }
+        .copilot-input { flex: 1; background: #161b22; border: 1px solid #30363d; color: white; padding: 5px; border-radius: 4px; outline: none; font-family: var(--font-mono); font-size: 11px; }
+        .copilot-input:focus { border-color: var(--neon-cyan); }
 
-        #copilot-panel { 
-            background: #0d1117; 
-            border-left: 1px solid #30363d; 
-            display: flex; 
-            flex-direction: column; 
-        }
-        .copilot-header {
-            padding: 10px; border-bottom: 1px solid #30363d; 
-            background: rgba(34, 211, 238, 0.1); 
-            color: #22d3ee; font-size: 11px; font-bold; font-family: var(--font-header);
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .copilot-chat {
-            flex: 1; overflow-y: auto; padding: 10px; font-size: 12px;
-            color: #c9d1d9; font-family: var(--font-mono);
-        }
-        .copilot-input-area {
-            padding: 10px; border-top: 1px solid #30363d; background: #050505;
-            display: flex; gap: 5px;
-        }
-        .copilot-input {
-            flex: 1; background: #161b22; border: 1px solid #30363d; color: white; 
-            padding: 5px; border-radius: 4px; outline: none; font-family: var(--font-mono); font-size: 11px;
-        }
-        .copilot-input:focus { border-color: #22d3ee; }
+        /* CLI Styles */
+        #cli-overlay { position: fixed; inset: 0; z-index: 3000; background: rgba(0, 0, 0, 0.95); display: flex; flex-direction: column; backdrop-filter: blur(5px); }
+        .cli-content { flex: 1; padding: 20px; font-family: 'Fira Code', monospace; font-size: 14px; color: #22d3ee; overflow-y: auto; }
+        .cli-input-area { display: flex; background: #050505; border-top: 1px solid #333; padding: 10px; align-items: center; }
+        .cli-prompt { color: #22c55e; margin-right: 10px; font-weight: bold; }
+        .cli-input { flex: 1; background: transparent; border: none; color: #fff; font-family: 'Fira Code', monospace; font-size: 14px; outline: none; }
 
+        /* Markdown Styles */
         .markdown-body h1, .markdown-body h2, .markdown-body h3 { font-weight: bold; margin-top: 0.5em; margin-bottom: 0.5em; color: #fff; }
         .markdown-body code { background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; font-size: 0.9em; font-family: var(--font-mono); }
         .markdown-body pre { background: #0d1117 !important; padding: 1em; border-radius: 8px; overflow-x: auto; margin: 10px 0; border: 1px solid #30363d; }
         .markdown-body pre code { background: transparent; padding: 0; color: inherit; }
-        .markdown-body img { max-width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); }
-
-        .hidden-ui { display: none !important; }
-        .flex-ui { display: flex !important; }
-        
-        .generated-image-container {
-            position: relative;
-            margin-top: 10px;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #22d3ee;
-            box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);
-        }
-        .generated-image-container img {
-            width: 100%;
-            display: block;
-            animation: slideUpFade 0.5s ease-out;
-        }
+        .markdown-body img { max-width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); display: block; margin: 10px auto; }
     </style>
 </head>
-<body class="h-screen w-screen flex flex-col relative select-none text-sm">
+<body class="h-screen w-screen flex flex-col relative select-none text-sm overflow-hidden">
 
     <div class="scanlines"></div>
 
     <!-- BOOT SCREEN -->
     <div id="boot-screen">
         <div class="loader-ring mb-6"></div>
-        <h1 class="text-3xl font-header text-white tracking-[0.2em] animate-pulse drop-shadow-[0_0_10px_rgba(168,85,247,0.8)]">TERMOS <span class="text-purple-500">FLAGSHIP</span></h1>
+        <h1 class="text-3xl font-header text-white tracking-[0.2em] animate-pulse drop-shadow-[0_0_10px_rgba(168,85,247,0.8)]">TERMOS <span class="text-purple-500">GALACTIC GLASS</span></h1>
         <div class="mt-4 font-mono text-xs text-cyan-400 flex gap-2 items-center" id="boot-text">
             <span class="w-2 h-2 bg-cyan-400 rounded-full animate-ping"></span> <span id="txt-init">INITIALIZING NEURAL LINK...</span>
         </div>
     </div>
 
-    <!-- BACKGROUND CANVAS -->
+    <!-- BACKGROUND CANVAS (Stars) -->
     <canvas id="galaxy-canvas" class="fixed top-0 left-0 w-full h-full z-0 pointer-events-none"></canvas>
+    
+    <!-- Background Gradient Orbs (From Neon Glass) -->
+    <div class="absolute top-0 left-0 w-96 h-96 bg-neon-purple/10 rounded-full blur-[100px] pointer-events-none z-0"></div>
+    <div class="absolute bottom-0 right-0 w-96 h-96 bg-neon-cyan/10 rounded-full blur-[100px] pointer-events-none z-0"></div>
 
     <!-- HEADER -->
-    <header class="fixed top-0 left-0 right-0 z-20 glass-panel border-b border-white/10 h-16 flex items-center justify-between px-4 lg:px-6 bg-black/60">
+    <header class="fixed top-4 left-4 right-4 z-20 glass-panel rounded-2xl h-16 flex items-center justify-between px-4 lg:px-6 bg-black/40 shadow-2xl border border-white/5">
         <div class="flex items-center gap-3">
             <div class="relative w-10 h-10 flex items-center justify-center">
                 <div class="absolute inset-0 bg-purple-600 rounded-lg blur opacity-40 animate-pulse"></div>
-                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center border border-white/20 relative z-10">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-neon-purple to-neon-cyan flex items-center justify-center border border-white/20 relative z-10 shadow-lg">
+                    <i class="fa-solid fa-bolt text-white text-sm"></i>
                 </div>
             </div>
             <div>
-                <h1 class="font-header font-bold text-lg tracking-wider text-white hidden sm:block">TERMOS <span class="text-purple-400">FLAGSHIP</span></h1>
+                <h1 class="font-header font-bold text-lg tracking-wider text-white hidden sm:block">TERMOS <span class="text-neon-cyan">GLASS</span></h1>
                 <div class="flex items-center gap-2 text-[10px] text-gray-400 font-mono mt-0.5">
                     <div id="api-status-dot" class="w-1.5 h-1.5 rounded-full bg-red-500"></div>
                     <span id="room-display">OFFLINE</span>
@@ -324,101 +202,131 @@
             </div>
         </div>
         <div class="flex items-center gap-2">
-            <button onclick="toggleMedia()" class="p-2 rounded-full hover:bg-white/10 text-purple-300 transition-colors glitch-hover" title="Media Deck">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            <button onclick="toggleMedia()" class="p-2.5 rounded-full bg-white/5 hover:bg-white/10 text-cyan-300 transition-all hover:scale-110 group" title="Media Deck">
+                <i class="fa-solid fa-music text-xs group-hover:animate-spin"></i>
             </button>
             
-            <button onclick="shareApp()" class="p-2 rounded-full hover:bg-white/10 text-cyan-300 transition-colors glitch-hover hidden sm:flex" title="Airdrop / Share App">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+            <button onclick="shareApp()" class="p-2.5 rounded-full bg-white/5 hover:bg-white/10 text-cyan-300 transition-all hover:scale-110 hidden sm:flex" title="Share">
+                <i class="fa-solid fa-share-nodes text-xs"></i>
             </button>
 
-            <button onclick="copySystemLog()" class="hidden sm:flex bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all items-center gap-1" title="Export System Log">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-                <span id="btn-copy-log">COPY LOG</span>
+            <button onclick="toggleCLI()" class="hidden sm:flex bg-green-900/30 hover:bg-green-900/50 text-green-300 border border-green-500/30 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all items-center gap-1 active-ring">
+                <i class="fa-solid fa-terminal text-[10px]"></i>
+                <span id="btn-cli">CLI</span>
             </button>
 
-            <button onclick="toggleProfile()" class="hidden sm:flex bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all">👤 <span id="btn-profile">PROFILE</span></button>
-            <button onclick="triggerKernelThought()" class="hidden sm:flex bg-cyan-900/30 hover:bg-cyan-900/50 text-cyan-300 border border-cyan-500/30 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all active-ring">🧠 <span id="btn-kernel">KERNEL</span></button>
-            <button onclick="toggleCodeEditor()" class="hidden sm:flex bg-purple-900/30 hover:bg-purple-900/50 text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all">🖋 <span id="btn-ide">IDE</span></button>
-            <button onclick="toggleAdmin()" id="admin-btn" class="p-2 rounded-full text-red-500/50 hover:text-red-500 hover:bg-red-900/20 transition-colors" title="System Console">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            <button onclick="toggleCodeEditor()" class="hidden sm:flex bg-purple-900/30 hover:bg-purple-900/50 text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all">
+                <i class="fa-solid fa-code text-[10px]"></i>
+                <span id="btn-ide">IDE</span>
+            </button>
+            
+            <button onclick="toggleProfile()" class="hidden sm:flex bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all">👤</button>
+            
+            <button onclick="toggleAdmin()" id="admin-btn" class="p-2.5 rounded-full bg-white/5 hover:bg-white/10 text-red-400 hover:text-red-300 transition-all hover:scale-110" title="System Console">
+                <i class="fa-solid fa-gear text-xs"></i>
             </button>
         </div>
     </header>
 
     <!-- MAIN CHAT AREA -->
-    <main id="chat-container" class="flex-1 overflow-y-auto pt-20 pb-32 px-4 z-10 scroll-smooth max-w-4xl mx-auto w-full space-y-4 mask-gradient">
+    <main id="chat-container" class="flex-1 overflow-y-auto pt-24 pb-32 px-4 z-10 scroll-smooth max-w-4xl mx-auto w-full space-y-4 mask-gradient">
+        <!-- Welcome Message -->
+        <div class="flex justify-center my-8 fade-in">
+            <div class="glass-panel px-6 py-3 rounded-full text-xs text-gray-300 font-mono border border-neon-cyan/30 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                System Online. Type commands or chat naturally.
+            </div>
+        </div>
     </main>
 
     <!-- INPUT AREA -->
-    <div class="fixed bottom-0 left-0 w-full z-30 glass-panel border-t border-white/10 pt-3 pb-[calc(12px+var(--safe-bottom))] px-4 bg-black/80">
+    <div class="fixed bottom-0 left-0 w-full z-30 glass-panel border-t border-white/10 pt-3 pb-[calc(12px+var(--safe-bottom))] px-4 bg-black/80 rounded-t-2xl shadow-2xl">
         <div class="max-w-4xl mx-auto">
             <div class="flex items-end gap-2 bg-black/40 rounded-xl p-1.5 border border-white/5 input-glow transition-all duration-300">
                 <button onclick="openKernelInput()" class="p-2.5 rounded-lg text-cyan-400 hover:bg-cyan-900/30 shrink-0 transition-colors" title="Ask AI">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
                 </button>
                 <input type="text" id="user-input" placeholder="Command: /ai [prompt], /img [prompt], /web [topic]..." autocomplete="off" class="flex-1 bg-transparent border-none outline-none text-white placeholder-gray-500 px-3 py-2.5 text-sm font-light tracking-wide">
-                <button id="send-btn" class="p-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shrink-0 transform active:scale-95 transition-all">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                <button id="send-btn" class="p-2.5 rounded-lg bg-gradient-to-r from-neon-purple to-neon-pink hover:opacity-90 text-white shadow-lg shrink-0 transform active:scale-95 transition-all">
+                    <i class="fa-solid fa-paper-plane text-xs"></i>
                 </button>
             </div>
         </div>
     </div>
 
     <!-- FLOATING MEDIA DECK -->
-    <div id="media-deck" class="media-overlay glass-panel rounded-2xl overflow-hidden border border-purple-500/30 shadow-[0_0_50px_rgba(168,85,247,0.2)]">
-        <div class="p-3 border-b border-white/5 flex justify-between items-center bg-black/40">
-            <span class="text-xs font-bold text-white font-header tracking-wider text-cyan-400" id="lbl-media-deck">MEDIA DECK</span>
-            <button onclick="toggleMedia()" class="text-gray-400 hover:text-white transition-colors">✕</button>
-        </div>
-        <div class="p-4">
-            <div class="flex gap-2 mb-4 p-1 bg-white/5 rounded-lg">
-                <button onclick="switchMediaTab('video')" id="tab-btn-video" class="flex-1 py-1.5 text-[10px] font-bold rounded bg-white/10 text-purple-300 shadow-sm border border-white/5 transition-all hover:bg-white/20">VIDEO</button>
-                <button onclick="switchMediaTab('radio')" id="tab-btn-radio" class="flex-1 py-1.5 text-[10px] font-bold rounded text-gray-400 hover:text-white hover:bg-white/5 transition-all">RADIO</button>
+    <div id="media-deck" class="fixed bottom-24 left-1/2 -translate-x-1/2 w-[95%] max-w-md glass-panel rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 transition-all duration-300 transform translate-y-[150%] opacity-0 z-50 overflow-hidden">
+        
+        <!-- Header -->
+        <div class="h-14 border-b border-white/5 flex items-center justify-between px-6 bg-black/20">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-music text-neon-purple animate-pulse"></i>
+                <span class="font-header font-bold text-white tracking-wider text-xs">GLOBAL FREQUENCY</span>
             </div>
-            
-            <div id="tab-video">
-                <div id="video-placeholder" class="bg-black/50 rounded-lg p-6 text-center border border-white/5 border-dashed mb-3">
+            <button onclick="toggleMedia()" class="text-gray-400 hover:text-white transition-colors"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="p-6 relative" style="height: 420px;">
+            <!-- Tabs -->
+            <div class="flex p-1 bg-white/5 rounded-xl mb-4">
+                <button onclick="switchMediaTab('radio')" id="tab-btn-radio" class="flex-1 py-2 rounded-lg text-[10px] font-bold bg-white/10 text-white shadow-lg transition-all">RADIO</button>
+                <button onclick="switchMediaTab('video')" id="tab-btn-video" class="flex-1 py-2 rounded-lg text-[10px] font-bold text-gray-400 hover:text-white transition-all">VIDEO</button>
+            </div>
+
+            <!-- RADIO CONTENT -->
+            <div id="tab-radio" class="h-full flex flex-col">
+                <!-- Search -->
+                <div class="relative mb-3">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]"></i>
+                    <input type="text" id="radio-search-input" oninput="debounceSearch()" placeholder="Search stations..." class="w-full bg-black/30 border border-white/5 rounded-lg pl-8 pr-4 py-2 text-[10px] text-white focus:border-neon-purple/50 outline-none transition-all">
+                </div>
+
+                <!-- Genre Chips -->
+                <div class="flex gap-2 overflow-x-auto pb-3 mb-2 scrollbar-hide" id="radio-genres-container">
+                    <div class="text-center w-full text-gray-500 text-[9px] py-2">LOADING GENRES...</div>
+                </div>
+
+                <!-- Station List -->
+                <div class="flex-1 overflow-y-auto space-y-2 pr-1" id="radio-stations-container">
+                    <div class="text-center text-gray-500 text-[9px] py-4">SELECT A GENRE OR SEARCH</div>
+                </div>
+            </div>
+
+            <!-- VIDEO CONTENT -->
+            <div id="tab-video" class="hidden h-full flex flex-col relative">
+                <div id="video-placeholder" class="bg-black/50 rounded-xl p-6 text-center border border-white/5 border-dashed h-full flex flex-col justify-center">
                     <p class="text-xs text-gray-500 mb-2 font-mono" id="txt-uplink-status">Uplink Status: STANDBY</p>
                     <button id="btn-enable-video" onclick="startWebRTC()" class="text-[10px] bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded shadow-lg transition-all w-full border border-purple-400/30 flex items-center justify-center gap-2">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> <span id="btn-init-video">INITIALIZE BROADCAST</span>
+                        <i class="fa-solid fa-video"></i> <span id="btn-init-video">INITIALIZE BROADCAST</span>
                     </button>
                     <button id="btn-disable-video" onclick="stopWebRTC()" class="hidden-ui text-[10px] bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded shadow-lg transition-all w-full border border-red-400/30 flex items-center justify-center gap-2">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> <span id="btn-term-video">TERMINATE LINK</span>
+                        <i class="fa-solid fa-power-off"></i> <span id="btn-term-video">TERMINATE LINK</span>
                     </button>
                 </div>
-                <div id="file-transfer-ui" class="hidden-ui mt-2 p-2 bg-white/5 rounded border border-white/10">
-                    <div class="text-[9px] text-gray-400 mb-1 font-mono" id="lbl-p2p-files">P2P DATA CHANNEL</div>
-                    <input type="file" id="p2p-file-input" class="hidden" onchange="handleFileSelect(this)">
-                    <button onclick="document.getElementById('p2p-file-input').click()" class="w-full text-[10px] bg-cyan-900/40 hover:bg-cyan-900/60 text-cyan-300 py-2 rounded border border-cyan-500/30 flex items-center justify-center gap-2 transition-colors">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                        <span id="btn-send-file">SEND FILE</span>
-                    </button>
-                    <div id="transfer-progress" class="mt-2 hidden">
-                        <div class="h-1 w-full bg-gray-700 rounded overflow-hidden">
-                            <div id="progress-bar" class="h-full bg-cyan-500 w-0 transition-all duration-200"></div>
-                        </div>
-                        <div class="text-[8px] text-cyan-400 mt-1 text-right" id="transfer-status">0%</div>
-                    </div>
-                </div>
-                <div id="video-grid" class="hidden video-grid"></div>
+                <div id="video-grid" class="hidden video-grid grid-cols-2 gap-2 h-full"></div>
             </div>
-            
-            <div id="tab-radio" class="hidden">
-                <div class="relative mb-2">
-                    <input type="text" id="radio-search-input" placeholder="Search stations..." 
-                           class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-purple-500 outline-none font-mono placeholder-gray-600">
-                    <div class="absolute right-2 top-2 text-gray-500 text-[10px]">🔍</div>
-                </div>
-                <div class="text-[10px] text-gray-400 font-mono mb-2" id="txt-scan-freq">>> CONNECTING TO GALACTIC FREQUENCY...</div>
-                <div id="radio-genres-container" class="radio-genres"><div class="text-center w-full text-gray-500 text-[9px] py-2">LOADING GENRES...</div></div>
-                <div id="radio-stations-container" class="station-list"><div class="text-center text-gray-500 text-[9px] py-4">SELECT A GENRE OR SEARCH</div></div>
+        </div>
+
+        <!-- PERSISTENT PLAYER BAR -->
+        <div id="player-bar" class="absolute bottom-0 left-0 right-0 bg-black/90 backdrop-blur-xl border-t border-white/5 p-3 flex items-center gap-3 translate-y-full transition-transform duration-300">
+            <div class="flex items-end gap-1 h-6">
+                <div class="bar h-2"></div><div class="bar h-4"></div><div class="bar h-3"></div><div class="bar h-5"></div>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="text-[10px] text-white font-bold truncate" id="current-track">No Station Selected</div>
+                <div class="text-[9px] text-gray-400 font-mono" id="current-status">IDLE</div>
+            </div>
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-volume-high text-gray-500 text-[10px]"></i>
+                <input type="range" min="0" max="1" step="0.1" value="1" onchange="setVolume(this.value)" class="w-12 h-1">
+                <button onclick="togglePlay()" class="w-7 h-7 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform">
+                    <i id="play-icon" class="fa-solid fa-play text-[10px]"></i>
+                </button>
             </div>
         </div>
     </div>
 
     <!-- ADMIN PANEL -->
-    <div id="admin-panel" class="hidden-ui fixed bottom-20 right-4 left-4 md:left-auto md:w-80 glass-panel rounded-xl border border-red-500/30 p-5 z-50 shadow-2xl bg-black/90">
+    <div id="admin-panel" class="hidden-ui fixed bottom-24 right-4 left-4 md:left-auto md:w-80 glass-panel rounded-xl border border-red-500/30 p-5 z-50 shadow-2xl bg-black/90">
         <h3 class="text-red-400 font-header text-xs font-bold mb-4 uppercase flex justify-between items-center">
             <span id="lbl-sys-console">System Console</span>
             <span class="text-[9px] bg-red-900/50 px-2 py-0.5 rounded text-red-300">GEN 2</span>
@@ -426,19 +334,20 @@
         <div class="space-y-4">
             <div>
                 <label class="text-[9px] text-gray-500 uppercase font-bold tracking-wider mb-1 block">AI PROVIDER</label>
-                <select id="provider-select" onchange="updateProviderSettings()" class="w-full bg-black/50 border border-white/10 rounded p-2.5 text-white text-xs focus:border-purple-500 outline-none font-mono transition-colors">
+                <select id="provider-select" onchange="updateProviderSettings()" class="w-full bg-black/50 border border-white/10 rounded p-2 text-white text-[10px] focus:border-purple-500 outline-none font-mono transition-colors">
                     <option value="groq">Groq (Free/Fast)</option>
                     <option value="deepseek">DeepSeek (Official)</option>
                     <option value="zhipu">Zhipu AI (GLM)</option>
+                    <option value="deepinfra">DeepInfra (Serverless)</option>
                 </select>
             </div>
             <div>
                 <label class="text-[9px] text-gray-500 uppercase font-bold tracking-wider mb-1 block" id="lbl-api-key">API Key</label>
-                <input type="password" id="api-key-input" class="w-full bg-black/50 border border-white/10 rounded p-2.5 text-white text-xs focus:border-red-500 outline-none font-mono transition-colors" placeholder="Enter Key...">
+                <input type="password" id="api-key-input" class="w-full bg-black/50 border border-white/10 rounded p-2 text-white text-[10px] focus:border-red-500 outline-none font-mono transition-colors" placeholder="Enter Key...">
             </div>
             <div>
                 <label class="text-[9px] text-gray-500 uppercase font-bold tracking-wider mb-1 block">NEURAL MODEL</label>
-                <select id="model-select" class="w-full bg-black/50 border border-white/10 rounded p-2.5 text-white text-xs focus:border-purple-500 outline-none font-mono transition-colors"></select>
+                <select id="model-select" class="w-full bg-black/50 border border-white/10 rounded p-2 text-white text-[10px] focus:border-purple-500 outline-none font-mono transition-colors"></select>
             </div>
             <button onclick="saveApiKey()" class="w-full bg-red-900/40 hover:bg-red-800/60 text-red-200 text-[10px] font-bold py-2.5 rounded border border-red-500/30 transition-all hover:shadow-[0_0_15px_rgba(239,68,68,0.3)]" id="btn-save-api">SAVE & RECONNECT</button>
             <hr class="border-white/10">
@@ -457,7 +366,7 @@
                 </div>
                 <div class="text-left">
                     <label class="block text-xs text-cyan-400 mb-1 font-mono font-bold" id="lbl-codename">CODENAME</label>
-                    <input type="text" id="edit-name" class="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-purple-500 outline-none transition-colors font-mono">
+                    <input type="text" id="edit-name" class="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-purple-500 outline-none transition-colors font-mono text-sm">
                 </div>
                 <div class="text-left space-y-3 pt-2 border-t border-white/10">
                     <label class="block text-[10px] text-gray-400 font-bold uppercase" id="lbl-settings">SETTINGS</label>
@@ -468,10 +377,6 @@
                             <option value="lt">Lietuvių</option>
                         </select>
                     </div>
-                    <button onclick="generateInviteLink()" class="w-full bg-cyan-900/30 hover:bg-cyan-900/50 text-cyan-300 text-[10px] font-bold py-2 rounded border border-cyan-500/30 transition-all flex items-center justify-center gap-2">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                        <span id="btn-gen-invite">GENERATE INVITE LINK</span>
-                    </button>
                 </div>
             </div>
             <div class="flex gap-3 mt-8">
@@ -492,55 +397,19 @@
             </div>
             <span class="text-xs text-gray-400 font-mono tracking-widest">SYSTEM_EDITOR_V4.0 [DEVOPS]</span>
             <div class="flex gap-2">
-                <button onclick="toggleRepoSettings()" class="text-[9px] bg-gray-800 hover:bg-gray-700 text-white px-2 py-1 rounded border border-gray-600 flex items-center gap-1">
-                    <span>⚙️ REPO SETTINGS</span>
-                </button>
-                <button onclick="pushToRepo()" class="text-[9px] bg-green-900 hover:bg-green-800 text-white px-2 py-1 rounded border border-green-600 flex items-center gap-1">
-                    <span>COMMIT & PUSH</span>
-                </button>
                 <button onclick="toggleCodeEditor()" class="text-white hover:text-red-400 font-bold text-lg px-2">×</button>
             </div>
         </div>
-        
-        <!-- IDE SETTINGS (REPO CONFIG) -->
-        <div id="ide-repo-settings" class="hidden-ui bg-black border-b border-white/10 p-3 grid grid-cols-2 md:grid-cols-4 gap-2 items-end">
-            <div>
-                <label class="text-[8px] text-gray-500 uppercase">GitHub Token</label>
-                <input type="password" id="gh-token" placeholder="ghp_..." class="w-full bg-[#0d1117] border border-white/20 text-white text-[10px] p-1 rounded outline-none">
-            </div>
-            <div>
-                <label class="text-[8px] text-gray-500 uppercase">Owner</label>
-                <input type="text" id="gh-owner" placeholder="username" class="w-full bg-[#0d1117] border border-white/20 text-white text-[10px] p-1 rounded outline-none">
-            </div>
-            <div>
-                <label class="text-[8px] text-gray-500 uppercase">Repo Name</label>
-                <input type="text" id="gh-repo" placeholder="my-repo" class="w-full bg-[#0d1117] border border-white/20 text-white text-[10px] p-1 rounded outline-none">
-            </div>
-            <div>
-                <label class="text-[8px] text-gray-500 uppercase">File Path</label>
-                <input type="text" id="gh-path" placeholder="index.html" class="w-full bg-[#0d1117] border border-white/20 text-white text-[10px] p-1 rounded outline-none">
-            </div>
-            <div class="col-span-2 md:col-span-4 mt-2 pt-2 border-t border-white/10 flex justify-between items-center">
-                <div class="flex gap-2 items-center">
-                    <input type="text" id="load-repo-input" placeholder="owner/repo (e.g. vercel/next.js)" class="bg-[#0d1117] border border-white/20 text-white text-[10px] p-1 rounded outline-none w-64">
-                    <button onclick="installRepo()" class="bg-purple-900 hover:bg-purple-800 text-white text-[9px] px-3 py-1 rounded border border-purple-500">INSTALL / CLONE</button>
-                </div>
-                <div class="text-[9px] text-gray-500 font-mono" id="file-sha-display">SHA: --</div>
-            </div>
-        </div>
-
         <div class="editor-body">
             <div class="editor-col">
                 <textarea id="code-area" spellcheck="false" placeholder="// Write code here..."></textarea>
             </div>
-            
             <div class="editor-col" id="preview-area">
                 <div class="absolute top-2 right-2 z-10 flex gap-2">
                     <button onclick="runCode()" class="bg-green-600 text-white text-[9px] px-2 py-1 rounded font-bold" id="btn-run-preview">RUN PREVIEW</button>
                 </div>
                 <iframe id="preview-frame" title="Preview"></iframe>
             </div>
-
             <div class="editor-col" id="copilot-panel">
                 <div class="copilot-header">
                     <span>COPILOT AI</span>
@@ -562,30 +431,47 @@
         </div>
     </div>
 
+    <!-- CLI OVERLAY -->
+    <div id="cli-overlay" class="hidden-ui">
+        <div class="h-10 border-b border-gray-700 flex items-center justify-between px-4 bg-black">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span class="text-xs text-green-400 font-bold font-mono">TERMINAL: TAILWIND-CLI-SIM</span>
+            </div>
+            <button onclick="toggleCLI()" class="text-gray-400 hover:text-white text-xl font-mono font-bold">&times;</button>
+        </div>
+        <div id="cli-output" class="cli-content">
+            <div class="text-white">Welcome to TermOS v4.0 CLI.</div>
+            <div class="text-gray-400 mb-4">Type 'help' for available commands.</div>
+        </div>
+        <div class="cli-input-area">
+            <span class="cli-prompt">user@termos:~$</span>
+            <input type="text" id="cli-input" class="cli-input" autocomplete="off" spellcheck="false">
+        </div>
+    </div>
+
     <script>
         /* --- CONFIGURATION & STATE --- */
         const PROVIDERS = {
             groq: { url: "https://api.groq.com/openai/v1/chat/completions", models: [{ id: "llama-3.3-70b-versatile", name: "Llama 3.3 70B" }, { id: "mixtral-8x7b-32768", name: "Mixtral 8x7B" }, { id: "gemma2-9b-it", name: "Gemma 2 9B" }], keyLabel: "Groq API Key" },
             deepseek: { url: "https://api.deepseek.com/chat/completions", models: [{ id: "deepseek-chat", name: "DeepSeek V3" }, { id: "deepseek-coder", name: "DeepSeek Coder" }], keyLabel: "DeepSeek API Key" },
-            zhipu: { url: "https://open.bigmodel.cn/api/paas/v4/chat/completions", models: [{ id: "glm-4", name: "GLM-4" }, { id: "glm-4-flash", name: "GLM-4 Flash" }], keyLabel: "Zhipu API Key" }
+            zhipu: { url: "https://open.bigmodel.cn/api/paas/v4/chat/completions", models: [{ id: "glm-4", name: "GLM-4" }, { id: "glm-4-flash", name: "GLM-4 Flash" }], keyLabel: "Zhipu API Key" },
+            deepinfra: { url: "https://api.deepinfra.com/v1/openai/chat/completions", models: [{ id: "meta-llama/Llama-3.3-70B-Instruct", name: "Llama 3.3 70B (DeepInfra)" }, { id: "Qwen/Qwen2.5-72B-Instruct", name: "Qwen 2.5 72B" }], keyLabel: "DeepInfra API Key" }
         };
 
         let currentProvider = localStorage.getItem('termos_provider') || 'groq';
         let currentModel = localStorage.getItem('termos_model') || 'llama-3.3-70b-versatile';
         let apiKeys = JSON.parse(localStorage.getItem('termos_api_keys') || '{}');
-        let ghToken = localStorage.getItem('termos_gh_token') || '';
-
-        const SYSTEM_MANIFEST_EN = "You are TermOS Kernel v4.0 Flagship.";
         let currentLang = localStorage.getItem('termos_lang') || 'en';
         let userProfile = { name: localStorage.getItem('termos_username') || 'User_' + Math.floor(Math.random() * 9999), avatar: localStorage.getItem('termos_avatar') || "👤" };
         let tempAvatarData = null;
         let currentRoom = "public"; 
         let mqttClient = null;
-        let currentFileSHA = null; // Stores SHA of file currently open in IDE
+        let isConnecting = false;
 
         const I18N = {
-            en: { init: "INITIALIZING NEURAL LINK...", mediaDeck: "MEDIA DECK", copyLog: "COPY LOG", profile: "PROFILE", kernel: "KERNEL", ide: "IDE", uplinkStatus: "Uplink Status: STANDBY", initBroadcast: "INITIALIZE BROADCAST", terminateLink: "TERMINATE LINK", p2pFiles: "P2P DATA CHANNEL", sendFile: "SEND FILE", scanFreq: ">> CONNECTING...", loadingGenres: "LOADING GENRES...", selectGenre: "SELECT GENRE", sysConsole: "System Console", apiKey: "API Key", saveReconnect: "SAVE & RECONNECT", resetSys: "EMERGENCY RESET", userId: "USER IDENTITY", upAvatar: "UPLOAD AVATAR", codename: "CODENAME", settings: "SETTINGS", language: "Language", genInvite: "GENERATE INVITE", saveId: "SAVE ID", cancel: "CANCEL", runPreview: "RUN PREVIEW", welcome: "System Online.", inviteGenerated: "Invite link copied!", inviteError: "Failed to generate invite.", fileSent: "File sent.", fileReceived: "File received: ", errorKey: "API Key Missing", errorAuth: "Invalid API Key", errorRate: "Rate Limit", searching: "Scanning...", generatingImg: "Rendering...", imgError: "Neural Network saturated.", radioBuffering: "BUFFERING...", radioError: "Stream Offline.", radioPlaying: "PLAYING", saveSuccess: "Identity Updated.", storageError: "Storage Full.", copilotThinking: "Analyzing Code...", gistSuccess: "Pushed successfully!", gistError: "Push Failed.", patchApplied: "Patch Applied." },
-            lt: { init: "INICIALIZUOJAMAS...", mediaDeck: "MEDIJOS", copyLog: "KOPIJUOTI", profile: "PROFILIS", kernel: "KERNELIS", ide: "IDE", uplinkStatus: "Ryšio Būklė", initBroadcast: "PRADĖTI", terminateLink: "NUTRAUKTI", p2pFiles: "P2P KANALAS", sendFile: "SIŲSTI", scanFreq: ">> JUNGIAMASI", loadingGenres: "ĮKELIAMAS...", selectGenre: "PASIRINKITE", sysConsole: "Konsolė", apiKey: "API Raktas", saveReconnect: "IŠSAUGOTI", resetSys: "ATSTATYTI", userId: "NAUDOTOJO ID", upAvatar: "ĮKELTI AVATARĄ", codename: "SLAPTAVARDIS", settings: "NUSTATYMAI", language: "Kalba", genInvite: "SUKURTI KVITIMĄ", saveId: "IŠSAUGOTI", cancel: "ATŠAUKTI", runPreview: "VYKDYTI", welcome: "Sistema veikia.", inviteGenerated: "Kvietimas nukopijuotas!", inviteError: "Klaida.", fileSent: "Išsiųsta.", fileReceived: "Gauta: ", errorKey: "Trūksta Rakto", errorAuth: "Blogas Raktas", errorRate: "Limitas", searching: "Skenuojama...", generatingImg: "Generuojamas...", imgError: "Tinklas užsikrovė.", radioBuffering: "BUFERIUOJAMA...", radioError: "Transliacija neveikia.", radioPlaying: "LEIDŽIAMA", saveSuccess: "Atnaujinta.", storageError: "Atmintis pilna.", copilotThinking: "Analizuojama...", gistSuccess: "Sėkmingai paduota!", gistError: "Nepavyko paduoti.", patchApplied: "Pritaikytas pataisymas." }
+            en: { init: "INITIALIZING NEURAL LINK...", mediaDeck: "MEDIA DECK", uplinkStatus: "Uplink Status: STANDBY", initBroadcast: "INITIALIZE BROADCAST", terminateLink: "TERMINATE LINK", scanFreq: ">> CONNECTING...", loadingGenres: "LOADING GENRES...", sysConsole: "System Console", apiKey: "API Key", saveReconnect: "SAVE & RECONNECT", resetSys: "EMERGENCY RESET", userId: "USER IDENTITY", upAvatar: "UPLOAD AVATAR", codename: "CODENAME", settings: "SETTINGS", language: "Language", saveId: "SAVE ID", cancel: "CANCEL", runPreview: "RUN PREVIEW", welcome: "System Online.", searching: "Scanning...", radioBuffering: "BUFFERING...", radioError: "Stream Offline.", radioPlaying: "PLAYING", saveSuccess: "Identity Updated.", storageError: "Storage Full.", copilotThinking: "Analyzing Code...", patchApplied: "Patch Applied." },
+            lt: { init: "INICIALIZUOJAMAS...", mediaDeck: "MEDIJOS", uplinkStatus: "Ryšio Būklė", initBroadcast: "PRADĖTI", terminateLink: "NUTRAUKTI", scanFreq: ">> JUNGIAMASI", loadingGenres: "ĮKELIAMAS...", sysConsole: "Konsolė", apiKey: "API Raktas", saveReconnect: "IŠSAUGOTI", resetSys: "ATSTATYTI", userId: "NAUDOTOJO ID", upAvatar: "ĮKELTI AVATARĄ", codename: "SLAPTAVARDIS", settings: "NUSTATYMAI", language: "Kalba", saveId: "IŠSAUGOTI", cancel: "ATŠAUKTI", runPreview: "VYKDYTI", welcome: "Sistema veikia.", searching: "Skenuojama...", radioBuffering: "BUFERIUOJAMA...", radioError: "Transliacija neveikia.", radioPlaying: "LEIDŽIAMA", saveSuccess: "Atnaujinta.", storageError: "Atmintis pilna.", copilotThinking: "Analizuojama...", patchApplied: "Pritaikytas pataisymas." }
         };
         function t(key) { return I18N[currentLang][key] || key; }
 
@@ -596,14 +482,18 @@
             apiKeyInput: document.getElementById('api-key-input'), profileModal: document.getElementById('profile-modal'), profilePreview: document.getElementById('profile-avatar-preview'),
             profileNameInput: document.getElementById('edit-name'), videoGrid: document.getElementById('video-grid'), btnVideoEnable: document.getElementById('btn-enable-video'),
             btnVideoDisable: document.getElementById('btn-disable-video'), radioGenres: document.getElementById('radio-genres-container'), radioStations: document.getElementById('radio-stations-container'),
-            radioSearchInput: document.getElementById('radio-search-input'), fileTransferUI: document.getElementById('file-transfer-ui'), progressBar: document.getElementById('progress-bar'),
-            transferStatus: document.getElementById('transfer-status'), transferProgress: document.getElementById('transfer-progress'), providerSelect: document.getElementById('provider-select'),
+            radioSearchInput: document.getElementById('radio-search-input'), playerBar: document.getElementById('player-bar'), currentTrack: document.getElementById('current-track'),
+            currentStatus: document.getElementById('current-status'), playIcon: document.getElementById('play-icon'), providerSelect: document.getElementById('provider-select'),
             modelSelect: document.getElementById('model-select'), lblApiKey: document.getElementById('lbl-api-key'), copilotInput: document.getElementById('copilot-input'),
             copilotChatLog: document.getElementById('copilot-chat-log'), copilotStatus: document.getElementById('copilot-status'),
-            // NEW IDE ELEMENTS
-            ghTokenInput: document.getElementById('gh-token'), ghOwner: document.getElementById('gh-owner'), ghRepo: document.getElementById('gh-repo'), ghPath: document.getElementById('gh-path'),
-            repoSettings: document.getElementById('ide-repo-settings'), shaDisplay: document.getElementById('file-sha-display'), loadRepoInput: document.getElementById('load-repo-input')
+            // CLI Elements
+            cliOverlay: document.getElementById('cli-overlay'), cliOutput: document.getElementById('cli-output'), cliInput: document.getElementById('cli-input')
         };
+
+        // Audio Object shared by logic and UI
+        let audioObj = new Audio(); 
+        let currentPlayingStationUrl = null;
+        let currentPlayingEl = null;
 
         const AudioFX = {
             ctx: new (window.AudioContext || window.webkitAudioContext)(),
@@ -625,7 +515,6 @@
         window.addEventListener('load', () => {
             document.getElementById('lang-select').value = currentLang;
             UI.providerSelect.value = currentProvider;
-            UI.ghTokenInput.value = ghToken;
             updateProviderSettings(); applyLanguageToDOM();
             AudioFX.boot();
             setTimeout(() => {
@@ -636,9 +525,7 @@
             UI.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleInput(); } });
             document.getElementById('avatar-upload').addEventListener('change', handleAvatarUpload);
             UI.copilotInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); askCopilot(); } });
-            const urlParams = new URLSearchParams(window.location.search);
-            const inviteState = urlParams.get('s');
-            if(inviteState) { try { const data = JSON.parse(atob(inviteState)); if(data.r) currentRoom = data.r; window.history.replaceState({}, document.title, window.location.pathname); addSystemMessage("Invite applied.", "info"); } catch(e) {} }
+            UI.cliInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleCLIInput(); } });
         });
 
         function updateProviderSettings() {
@@ -651,21 +538,20 @@
             const config = PROVIDERS[currentProvider];
             UI.lblApiKey.innerText = config.keyLabel;
             UI.apiKeyInput.value = apiKeys[currentProvider] || "";
-            if(UI.modelSelect.value === "") { UI.modelSelect.selectedIndex = 0; currentModel = UI.modelSelect.value; }
         }
 
         function applyLanguageToDOM() {
-            const map = { 'txt-init': 'init', 'lbl-media-deck': 'mediaDeck', 'btn-copy-log': 'copyLog', 'btn-profile': 'profile', 'btn-kernel': 'kernel', 'btn-ide': 'ide', 'txt-uplink-status': 'uplinkStatus', 'btn-init-video': 'initBroadcast', 'btn-term-video': 'terminateLink', 'lbl-p2p-files': 'p2pFiles', 'btn-send-file': 'sendFile', 'txt-scan-freq': 'scanFreq', 'txt-loading-genres': 'loadingGenres', 'txt-select-genre': 'selectGenre', 'lbl-sys-console': 'sysConsole', 'btn-save-api': 'saveReconnect', 'btn-reset-sys': 'resetSys', 'lbl-user-id': 'userId', 'btn-up-avatar': 'upAvatar', 'lbl-codename': 'codename', 'lbl-settings': 'settings', 'lbl-language': 'language', 'btn-gen-invite': 'genInvite', 'btn-save-id': 'saveId', 'btn-cancel': 'cancel', 'btn-run-preview': 'runPreview' };
+            const map = { 'txt-init': 'init', 'lbl-media-deck': 'mediaDeck', 'btn-cli': 'cli', 'btn-ide': 'ide', 'txt-uplink-status': 'uplinkStatus', 'btn-init-video': 'initBroadcast', 'btn-term-video': 'terminateLink', 'txt-scan-freq': 'scanFreq', 'txt-loading-genres': 'loadingGenres', 'lbl-sys-console': 'sysConsole', 'btn-save-api': 'saveReconnect', 'btn-reset-sys': 'resetSys', 'lbl-user-id': 'userId', 'btn-up-avatar': 'upAvatar', 'lbl-codename': 'codename', 'lbl-settings': 'settings', 'lbl-language': 'language', 'btn-save-id': 'saveId', 'btn-cancel': 'cancel', 'btn-run-preview': 'runPreview' };
             for(const [id, key] of Object.entries(map)) { const el = document.getElementById(id); if(el) el.innerText = t(key); }
             UI.input.placeholder = currentLang === 'en' ? "Command: /ai [prompt], /img [prompt], /web [topic]..." : "Komanda: /ai [užklausa], /img [užklausa], /web [tema]...";
-            if(UI.radioSearchInput) { UI.radioSearchInput.placeholder = currentLang === 'en' ? "Search stations..." : "Ieškoti stočių..."; }
+            if(UI.radioSearchInput) UI.radioSearchInput.placeholder = currentLang === 'en' ? "Search stations..." : "Ieškoti stočių...";
         }
 
         function changeLanguage(lang) { currentLang = lang; localStorage.setItem('termos_lang', lang); applyLanguageToDOM(); }
         function startSystem() { updateStatus(apiKeys[currentProvider]); if(!apiKeys[currentProvider]) { setTimeout(() => { addSystemMessage("⚠️ " + t('errorKey'), "warning"); AudioFX.error(); toggleAdmin(); }, 1000); } else { connectMQTT(); } UI.input.focus(); }
 
         async function safeFetch(messages, jsonMode = false) {
-            const key = apiKeys[currentProvider]; if (!key) throw new Error(t('errorKey'));
+            const key = apiKeys[currentProvider]; if (!key) throw new Error("API Key Missing");
             const providerConfig = PROVIDERS[currentProvider];
             try {
                 const response = await fetch(providerConfig.url, {
@@ -673,21 +559,49 @@
                     body: JSON.stringify({ model: currentModel, messages: messages, temperature: 0.6, max_tokens: 4096, response_format: jsonMode ? { "type": "json_object" } : undefined })
                 });
                 const data = await response.json();
-                if (!response.ok) { const errMsg = data.error?.message || data.message || `HTTP ${response.status}`; if(response.status === 401) throw new Error(t('errorAuth')); if(response.status === 429) throw new Error(t('errorRate')); throw new Error(errMsg); }
+                if (!response.ok) { const errMsg = data.error?.message || data.message || `HTTP ${response.status}`; if(response.status === 401) throw new Error("Invalid API Key"); if(response.status === 429) throw new Error("Rate Limit"); throw new Error(errMsg); }
                 return data.choices[0].message.content;
             } catch (error) { throw error; }
+        }
+
+        // --- NETWORK PROXY FIX (PROXY FOR TEXT, DIRECT FOR IMAGES) ---
+        async function fetchWithProxy(url, type = 'json') {
+            // Only use proxy for JSON (Wikipedia/Radio). Images fetch directly.
+            if (type === 'image') {
+                return fetch(url);
+            }
+            // Text fetch uses proxy
+            try {
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                const res = await fetch(proxyUrl);
+                if (!res.ok) throw new Error(`Proxy failed: ${res.status}`);
+                const data = await res.json();
+                if (data.status.http_code >= 200 && data.status.http_code < 300) {
+                     return new Response(data.contents, {
+                            status: data.status.http_code,
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                }
+                throw new Error("Proxy returned non-200 status");
+            } catch (e) {
+                console.warn("Proxy fetch failed, trying direct fetch", e);
+                return fetch(url);
+            }
         }
 
         async function performWebSearch(query) {
             const id = 'web-' + Date.now(); addThinking(id, "WEB"); AudioFX.system();
             try {
                 const searchUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=1&namespace=0&format=json&origin=*`;
-                const searchRes = await fetch(searchUrl); const searchData = await searchRes.json();
+                // Use Proxy
+                const searchRes = await fetchWithProxy(searchUrl, 'json'); 
+                const searchData = await searchRes.json();
                 if(!searchData[1] || searchData[1].length === 0) { removeThinking(id); addSystemMessage("No data found.", "warning"); return; }
                 const pageTitle = searchData[1][0]; const pageUrl = searchData[3][0];
                 const summaryUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pageTitle)}`;
-                const summaryRes = await fetch(summaryUrl);
-                const summaryData = await summaryRes.json(); // FIX
+                // Use Proxy
+                const summaryRes = await fetchWithProxy(summaryUrl, 'json');
+                const summaryData = await summaryRes.json(); 
                 removeThinking(id);
                 const div = document.createElement('div');
                 div.className = "flex gap-3 my-2 msg-anim";
@@ -696,21 +610,72 @@
             } catch (e) { removeThinking(id); addSystemMessage("Archive Error: " + e.message, "error"); }
         }
 
-        function generateImage(prompt) {
-            const id = 'img-' + Date.now(); addThinking(id, "IMG"); AudioFX.system();
-            const safePrompt = prompt.substring(0, 200); const seed = Math.floor(Math.random() * 100000);
-            const encodedPrompt = encodeURIComponent(safePrompt + " cyberpunk, high resolution, 8k, neon lighting");
-            const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&seed=${seed}&model=flux`;
-            const img = new Image(); img.crossOrigin = "Anonymous";
-            const timeout = setTimeout(() => { removeThinking(id); addSystemMessage(t('imgError'), "error"); }, 30000); // FIX TIMEOUT
-            img.onload = () => { clearTimeout(timeout); removeThinking(id);
+        // --- ROBUST IMAGE GENERATION (DIRECT FETCH) ---
+        async function generateImage(prompt) {
+            const id = 'img-' + Date.now();
+            addThinking(id, "IMG"); 
+            AudioFX.system();
+
+            const safePrompt = prompt.substring(0, 50); 
+            const seed = Math.floor(Math.random() * 1000000);
+            const encodedPrompt = encodeURIComponent(safePrompt);
+            
+            // Using direct URL to bypass proxy issues for binary data
+            const imageUrl = `https://pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true`;
+            
+            console.log("Attempting to load image (Direct):", imageUrl);
+
+            try {
+                const response = await fetch(imageUrl);
+                if (!response.ok) throw new Error(`Server returned ${response.status}`);
+                
+                const blob = await response.blob();
+                const displayUrl = URL.createObjectURL(blob);
+
+                const img = new Image();
+                img.alt = safePrompt;
+                img.src = displayUrl;
+
+                await new Promise((resolve, reject) => {
+                    img.onload = () => {
+                        img.decode().then(() => resolve()).catch(reject);
+                    };
+                    img.onerror = () => reject(new Error("Failed to render image"));
+                });
+
+                removeThinking(id);
                 const div = document.createElement('div');
                 div.className = "flex gap-3 my-2 msg-anim";
-                div.innerHTML = `<div class="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-xs font-bold text-white shadow-lg ring-1 ring-white/20 shrink-0 border border-pink-400/50">IMG</div><div class="flex-1 bg-slate-900/80 backdrop-blur-md border border-pink-500/30 p-3 rounded-2xl rounded-tl-none text-sm text-gray-200 shadow-md"><div class="text-[10px] text-pink-400 font-mono mb-1">NEURAL IMAGERY GENERATED</div><div class="generated-image-container"><img src="${imageUrl}" alt="${safePrompt}"></div><div class="mt-2 text-[10px] text-gray-400 font-mono">"${safePrompt}"</div></div>`;
+                div.innerHTML = `<div class="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-xs font-bold text-white shadow-lg ring-1 ring-white/20 shrink-0 border border-pink-400/50">IMG</div><div class="flex-1 bg-slate-900/80 backdrop-blur-md border border-pink-500/30 p-3 rounded-2xl rounded-tl-none text-sm text-gray-200 shadow-md"><div class="text-[10px] text-pink-400 font-mono mb-1">NEURAL IMAGERY</div><div class="generated-image-container"><img src="${displayUrl}" alt="${safePrompt}" style="display:block; width:100%; border-radius:8px;"></div><div class="mt-2 text-[10px] text-gray-400 font-mono">"${safePrompt}"</div></div>`;
                 UI.chat.appendChild(div); scrollToBottom();
-            };
-            img.onerror = () => { clearTimeout(timeout); removeThinking(id); addSystemMessage(t('imgError'), "error"); };
-            setTimeout(() => { img.src = imageUrl; }, 100);
+
+                // Cleanup Blob URL
+                setTimeout(() => URL.revokeObjectURL(displayUrl), 60000);
+
+            } catch (e) {
+                removeThinking(id);
+                console.error("Image Generation Error:", e);
+                showImageError(safePrompt, imageUrl, e.message);
+            }
+        }
+
+        function showImageError(prompt, urlAttempt, errorMsg) {
+            const div = document.createElement('div');
+            div.className = "flex gap-3 my-2 msg-anim";
+            div.innerHTML = `
+                <div class="w-9 h-9 rounded-full bg-red-900/50 flex items-center justify-center text-xs font-bold text-white shrink-0 border border-red-500/50"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div class="flex-1 bg-red-900/10 border border-red-500/20 p-3 rounded-2xl rounded-tl-none text-sm text-gray-200">
+                    <div class="text-[10px] text-red-400 font-mono mb-1">GENERATION FAILED</div>
+                    <div class="mb-2 text-gray-300 text-[10px]">Could not load image data.</div>
+                    <div class="text-[9px] text-gray-500 font-mono break-all mb-2 bg-black/20 p-1 rounded border border-white/10">${errorMsg ? "Error: " + errorMsg : "Network or server blocked."}</div>
+                    <div class="text-[9px] text-gray-400 mb-2 font-mono">"${prompt}"</div>
+                    <button onclick="generateImage('${prompt.replace(/'/g, "\\$2")}')" class="mt-2 text-[10px] bg-red-900/30 hover:bg-red-900/50 text-red-300 border border-red-500/30 px-3 py-1 rounded inline-flex items-center gap-1 transition-colors">
+                        <i class="fa-solid fa-rotate-right"></i> TRY NEW SEED
+                    </button>
+                </div>
+            `;
+            UI.chat.appendChild(div); scrollToBottom();
+            AudioFX.error();
         }
 
         async function handleInput() {
@@ -719,6 +684,8 @@
             addUserMessage(text, true, userProfile.name, userProfile.avatar);
             if (mqttClient && mqttClient.isConnected()) {
                 try { const payload = JSON.stringify({ type: 'chat', user: userProfile.name, avatar: userProfile.avatar, text: text, ts: Date.now() }); const topic = currentRoom === "public" ? "termos/public" : `termos/rooms/${currentRoom}`; const msg = new Paho.MQTT.Message(payload); msg.destinationName = topic; msg.qos = 1; mqttClient.send(msg); } catch(e) { console.error("MQTT Error", e); }
+            } else {
+                addSystemMessage("Connection lost. Retrying...", "warning");
             }
         }
 
@@ -731,18 +698,18 @@
                 case '/join': if(parts[1]) joinRoom(parts[1]); break;
                 case '/clear': UI.chat.innerHTML = ''; break;
                 case '/kernel': triggerKernelThought(); break;
-                case '/video': toggleMedia(); break;
+                case '/video': toggleMedia(); switchMediaTab('video'); break;
                 default: addSystemMessage(`Unknown: ${cmd}`, "warning"); AudioFX.error();
             }
         }
 
         async function processAICommand(prompt) {
-            if (!apiKeys[currentProvider]) { addSystemMessage("⚠️ " + t('errorKey'), "error"); AudioFX.error(); toggleAdmin(); return; }
+            if (!apiKeys[currentProvider]) { addSystemMessage("⚠️ API Key Missing", "error"); AudioFX.error(); toggleAdmin(); return; }
             addUserMessage(prompt, true, userProfile.name, userProfile.avatar);
             const id = 'ai-' + Date.now(); addThinking(id, "AI");
             try {
                 const context = `User: ${userProfile.name}, Room: ${currentRoom}, Lang: ${currentLang}`;
-                const messages = [{ role: "system", content: `${SYSTEM_MANIFEST_EN} ${context}. Reply in ${currentLang === 'en' ? 'English' : 'Lithuanian'}.` }, { role: "user", content: prompt }];
+                const messages = [{ role: "system", content: `You are TermOS Kernel v4.0. ${context}. Reply in ${currentLang === 'en' ? 'English' : 'Lithuanian'}.` }, { role: "user", content: prompt }];
                 const reply = await safeFetch(messages);
                 removeThinking(id); addAIMessage(reply);
             } catch (e) { removeThinking(id); addSystemMessage("AI Error: " + e.message, "error"); if(e.message.includes("401")) setTimeout(() => toggleAdmin(), 1000); }
@@ -788,23 +755,13 @@
 
         function updateStatus(active) {
             if(active) { UI.apiDot.className = "w-1.5 h-1.5 rounded-full bg-green-400 shadow-[0_0_8px_#4ade80] animate-pulse"; UI.roomDisp.innerText = currentRoom === "public" ? "PUBLIC GRID" : `ROOM: ${currentRoom.toUpperCase()}`; UI.roomDisp.classList.add("text-green-400"); UI.roomDisp.classList.remove("text-red-500"); }
-            else { UI.apiDot.className = "w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_#ef4444]"; UI.roomDisp.innerText = "OFFLINE"; UI.roomDisp.classList.remove("green-400"); UI.roomDisp.classList.add("text-red-500"); }
-        }
-
-        function copySystemLog() {
-            const logs = document.querySelectorAll('#chat-container > div'); let text = "LOG:\n";
-            logs.forEach(el => { const c = el.innerText.replace(/\n+/g, ' ').trim(); if(c && !c.includes("PROCESSING")) text += `${c}\n`; });
-            navigator.clipboard.writeText(text).then(() => { addSystemMessage("Log copied.", "info"); AudioFX.system(); }).catch(err => addSystemMessage("Copy failed.", "error"));
+            else { UI.apiDot.className = "w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_#ef4444]"; UI.roomDisp.innerText = "RECONNECTING..."; UI.roomDisp.classList.remove("green-400"); UI.roomDisp.classList.add("text-red-500"); }
         }
 
         function toggleAdmin() { const p = UI.adminPanel; if(p.classList.contains('hidden-ui')) { p.classList.remove('hidden-ui'); p.classList.add('flex-ui'); updateProviderSettings(); } else { p.classList.add('hidden-ui'); p.classList.remove('flex-ui'); } }
         function saveApiKey() {
             const key = UI.apiKeyInput.value.trim(); const provider = UI.providerSelect.value; const model = UI.modelSelect.value;
             if(key) { apiKeys[provider] = key; localStorage.setItem('termos_api_keys', JSON.stringify(apiKeys)); }
-            // Save GH Token
-            const ght = UI.ghTokenInput.value.trim();
-            if(ght) { ghToken = ght; localStorage.setItem('termos_gh_token', ghToken); }
-            
             currentProvider = provider; currentModel = model; localStorage.setItem('termos_provider', currentProvider); localStorage.setItem('termos_model', currentModel);
             updateStatus(!!apiKeys[currentProvider]); addSystemMessage(`Core Updated: ${provider}`, "info"); connectMQTT(); toggleAdmin();
         }
@@ -838,44 +795,35 @@
             try { localStorage.setItem('termos_username', userProfile.name); localStorage.setItem('termos_avatar', userProfile.avatar); addSystemMessage(t('saveSuccess'), "info"); toggleProfile(); }
             catch (e) { if (e.name === 'QuotaExceededError' || e.code === 22) { try { localStorage.setItem('termos_username', userProfile.name); addSystemMessage(t('storageError'), "error"); } catch(e2) {} } else { console.error(e); } }
         }
-        function generateInviteLink() { try { const data = { r: currentRoom }; const b64 = btoa(JSON.stringify(data)); navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?s=${b64}`).then(() => addSystemMessage(t('inviteGenerated'), "info")); } catch(e) { addSystemMessage(t('inviteError'), "error"); } }
-        function shareApp() { if (navigator.share) navigator.share({ title: 'TermOS', text: 'Join session.', url: window.location.href }).catch(()=>{}); else generateInviteLink(); }
+        function shareApp() { if (navigator.share) navigator.share({ title: 'TermOS', text: 'Join session.', url: window.location.href }).catch(()=>{}); }
 
+        /* --- MQTT FIX --- */
         function connectMQTT() {
             if (typeof Paho === 'undefined') return;
+            if (isConnecting) return;
+            isConnecting = true;
             const clientId = "termos_" + Math.random().toString(16).substr(2, 8);
             mqttClient = new Paho.MQTT.Client("broker.emqx.io", 8084, "/mqtt", clientId);
-            mqttClient.onConnectionLost = (responseObject) => { if (responseObject.errorCode !== 0) updateStatus(false); };
+            mqttClient.onConnectionLost = (responseObject) => {
+                isConnecting = false;
+                if (responseObject.errorCode !== 0) { updateStatus(false); console.warn("MQTT Lost:", responseObject); setTimeout(connectMQTT, 5000); }
+            };
             mqttClient.onMessageArrived = (message) => {
                 try {
                     const payload = JSON.parse(message.payloadString);
                     if (payload.user === userProfile.name) return;
-                    if (payload.type === 'chat') { AudioFX.receive(); addUserMessage(payload.text, false, payload.user, payload.avatar); }
-                    else if (payload.type === 'join') addSystemMessage(`${payload.user} entered.`, "info");
+                    if (payload.type === 'chat') { AudioFX.receive(); addUserMessage(payload.text, false, payload.user, payload.avatar || "👤"); }
                     else if (payload.type === 'webrtc') handleWebRTCMessage(payload);
-                } catch(e) {}
+                } catch(e) { console.error("MQTT Parse Error", e); }
             };
-            const options = { timeout: 5, useSSL: true, onSuccess: () => {
-                const topic = currentRoom === "public" ? "termos/public" : `termos/rooms/${currentRoom}`;
-                mqttClient.subscribe(topic, { qos: 1 }); updateStatus(true);
-                mqttClient.send(new Paho.MQTT.Message(JSON.stringify({ type: 'join', user: userProfile.name, avatar: userProfile.avatar })));
-            }, onFailure: () => { updateStatus(false); } };
-            mqttClient.connect(options);
+            const options = { timeout: 5, useSSL: true, keepAliveInterval: 30, onSuccess: () => {
+                isConnecting = false; const topic = currentRoom === "public" ? "termos/public" : `termos/rooms/${currentRoom}`; mqttClient.subscribe(topic, { qos: 1 }); updateStatus(true);
+                try { const joinMsg = new Paho.MQTT.Message(JSON.stringify({ type: 'join', user: userProfile.name, avatar: userProfile.avatar })); joinMsg.destinationName = topic; mqttClient.send(joinMsg); } catch(e) {}
+            }, onFailure: (error) => { isConnecting = false; updateStatus(false); setTimeout(connectMQTT, 5000); } };
+            try { mqttClient.connect(options); } catch(e) { isConnecting = false; setTimeout(connectMQTT, 5000); }
         }
-
         function joinRoom(roomName) {
-            if(roomName === currentRoom) return;
-            if(mqttClient && mqttClient.isConnected()) {
-                mqttClient.unsubscribe(currentRoom === "public" ? "termos/public" : `termos/rooms/${currentRoom}`);
-                mqttClient.send(new Paho.MQTT.Message(JSON.stringify({ type: 'leave', user: userProfile.name })));
-            }
-            stopWebRTC(); currentRoom = roomName; updateStatus(true);
-            if (mqttClient && mqttClient.isConnected()) {
-                const newTopic = `termos/rooms/${currentRoom}`;
-                mqttClient.subscribe(newTopic, { qos: 1 });
-                mqttClient.send(new Paho.MQTT.Message(JSON.stringify({ type: 'join', user: userProfile.name, avatar: userProfile.avatar })));
-                addSystemMessage(`Joined: ${roomName}`, "info");
-            }
+            if(roomName === currentRoom) return; stopWebRTC(); currentRoom = roomName; updateStatus(false); connectMQTT(); if (mqttClient && mqttClient.isConnected()) addSystemMessage(`Joined: ${roomName}`, "info");
         }
 
         async function triggerKernelThought() {
@@ -884,64 +832,131 @@
             try {
                 const messages = [{ role: "system", content: `You are TermOS Kernel. Time: ${new Date().toLocaleTimeString()}. Reply in ${currentLang}.` }, { role: "user", content: "System status." }];
                 const reply = await safeFetch(messages); removeThinking(id);
-                const div = document.createElement('div');
-                div.className = "flex gap-3 my-4 msg-anim border border-cyan-500/30 bg-cyan-900/10 p-4 rounded-xl relative overflow-hidden backdrop-blur-md";
+                const div = document.createElement('div'); div.className = "flex gap-3 my-4 msg-anim border border-cyan-500/30 bg-cyan-900/10 p-4 rounded-xl relative overflow-hidden backdrop-blur-md";
                 div.innerHTML = `<div class="absolute top-0 left-0 w-1 h-full bg-cyan-500"></div><div class="relative z-10"><div class="text-[10px] text-cyan-400 font-bold tracking-widest mb-2">KERNEL_THOUGHT.EXE</div><div class="text-sm text-gray-200 font-light leading-relaxed font-mono">${escapeHtml(reply)}</div></div>`;
                 UI.chat.appendChild(div); scrollToBottom();
             } catch (e) { removeThinking(id); addSystemMessage("Kernel Panic: " + e.message, "error"); }
         }
 
+        /* --- MEDIA DECK & RADIO --- */
+        let searchTimeout = null;
+        
+        function toggleMedia() { 
+            const deck = document.getElementById('media-deck'); 
+            if (deck.classList.contains('translate-y-[150%]')) {
+                deck.classList.remove('translate-y-[150%]', 'opacity-0'); 
+                if(UI.radioGenres.children.length <= 1) loadGenres();
+            } else {
+                deck.classList.add('translate-y-[150%]', 'opacity-0');
+            }
+        }
+        function switchMediaTab(tab) { 
+            document.getElementById('tab-radio').classList.add('hidden'); document.getElementById('tab-video').classList.add('hidden'); 
+            document.getElementById('tab-'+tab).classList.remove('hidden'); 
+            const isActive = (t) => t === tab ? "bg-white/10 text-white shadow-lg" : "text-gray-400 hover:text-white"; 
+            document.getElementById('tab-btn-radio').className = `flex-1 py-2 rounded-lg text-[10px] font-bold border border-white/5 transition-all ${isActive('radio')}`; 
+            document.getElementById('tab-btn-video').className = `flex-1 py-2 rounded-lg text-[10px] font-bold border border-white/5 transition-all ${isActive('video')}`; 
+        }
+
+        async function loadGenres() {
+            try { 
+                // Use Proxy for JSON text fetch
+                const res = await fetchWithProxy('https://de1.api.radio-browser.info/json/tags', 'json'); 
+                const genres = (await res.json()).filter(g => g.stationcount > 10).sort((a,b) => b.stationcount - a.stationcount).slice(0, 12); 
+                UI.radioGenres.innerHTML = ''; genres.forEach(g => { 
+                    const chip = document.createElement('button'); chip.className = "whitespace-nowrap px-3 py-1.5 rounded-full text-[9px] font-bold bg-white/5 border border-white/5 text-gray-300 hover:bg-neon-purple/20 hover:text-white hover:border-neon-purple/50 transition-all"; chip.innerText = g.name; chip.onclick = () => loadStationsByTag(g.name); UI.radioGenres.appendChild(chip); 
+                }); 
+            } catch(e) { UI.radioGenres.innerHTML = '<span class="text-red-400 text-[9px]">ERROR (Network)</span>'; } 
+        }
+        
+        async function loadStationsByTag(tag) { 
+            UI.currentStatus.innerText = "SCANNING..."; try { 
+                // Use Proxy for JSON text fetch
+                const res = await fetchWithProxy(`https://de1.api.radio-browser.info/json/stations/search?tag=${encodeURIComponent(tag)}&limit=20&order=clickcount&reverse=true&hidebroken=true`, 'json'); 
+                const stations = await res.json(); renderStationList(stations); 
+            } catch(e) { UI.radioStations.innerHTML = '<div class="text-center text-red-400 text-[9px] mt-4">CONNECTION FAILED (Try /video)</div>'; } 
+        }
+        
+        async function searchStationsByName(name) {
+            UI.currentStatus.innerText = "SEARCHING...";
+            // Use Proxy for JSON text fetch
+            try {
+                const res = await fetchWithProxy(`https://de1.api.radio-browser.info/json/stations/search?name=${encodeURIComponent(name)}&limit=15&order=clickcount&reverse=true&hidebroken=true`, 'json');
+                const stations = await res.json();
+                renderStationList(stations);
+            } catch(e) { UI.radioStations.innerHTML = '<div class="text-center text-red-400 text-[9px] mt-4">SEARCH ERROR (Try /video)</div>'; }
+        }
+        
+        function debounceSearch() { clearTimeout(searchTimeout); const query = UI.radioSearchInput.value.trim(); if(query.length < 2) return; searchTimeout = setTimeout(() => searchStationsByName(query), 500); }
+        
+        function renderStationList(stations) { 
+            UI.radioStations.innerHTML = ''; if(stations.length === 0) { UI.radioStations.innerHTML = '<div class="text-center text-gray-500 text-[9px] mt-4">NO STATIONS</div>'; return; } 
+            stations.forEach((s, index) => { 
+                const div = document.createElement('div'); 
+                div.className = "group flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-neon-purple/30 cursor-pointer transition-all mb-2"; 
+                div.onclick = () => playStation(index, s);
+                const favicon = s.favicon ? `<img src="${s.favicon}" class="w-6 h-6 rounded bg-black/50 mr-3" onerror="this.style.display='none'">` : '';
+                div.innerHTML = `<div class="flex items-center overflow-hidden">${favicon}<div class="min-w-0"><div class="text-[10px] font-bold text-white group-hover:text-neon-purple transition-colors truncate">${s.name}</div><div class="text-[8px] text-gray-500">${s.country || ''}</div></div></div><div class="w-6 h-6 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-neon-purple/20 group-hover:border-neon-purple/50 transition-all"><i class="fa-solid fa-play text-[8px] text-gray-400 group-hover:text-neon-purple"></i></div>`; 
+                UI.radioStations.appendChild(div); 
+            }); 
+        }
+        
+        async function playStation(index, station) {
+            if(currentPlayingEl) currentPlayingEl.classList.remove('border-neon-purple', 'bg-neon-purple/10');
+            const list = UI.radioStations.children;
+            if(index >= 0 && index < list.length) {
+                currentPlayingEl = list[index];
+                currentPlayingEl.classList.add('border-neon-purple', 'bg-neon-purple/10');
+                currentPlayingEl.querySelector('.fa-play').classList.replace('fa-play', 'fa-chart-simple');
+            }
+            
+            const url = station.url_resolved || station.url;
+            UI.currentStatus.innerText = "BUFFERING...";
+            UI.currentTrack.innerText = station.name.toUpperCase();
+            UI.playerBar.classList.remove('translate-y-full');
+            
+            if(audioObj.src) { audioObj.pause(); audioObj.currentTime = 0; }
+            audioObj.src = url; audioObj.load();
+            
+            try { await audioObj.play(); currentPlayingStationUrl = url; updatePlayButton(); UI.currentStatus.innerText = "LIVE"; UI.currentStatus.className = "text-neon-cyan font-mono text-[9px] animate-pulse"; } 
+            catch (e) { UI.currentStatus.innerText = "OFFLINE"; UI.currentStatus.className = "text-red-400 font-mono text-[9px]"; AudioFX.error(); }
+        }
+        
+        function togglePlay() { 
+            if (audioObj.paused) { audioObj.play(); UI.currentStatus.innerText = "LIVE"; } 
+            else { audioObj.pause(); UI.currentStatus.innerText = "PAUSED"; } 
+            updatePlayButton(); 
+        }
+        function updatePlayButton() { 
+            if(audioObj.paused) { UI.playIcon.classList.remove('fa-pause'); UI.playIcon.classList.add('fa-play'); } 
+            else { UI.playIcon.classList.remove('fa-play'); UI.playIcon.classList.add('fa-pause'); } 
+        }
+        function setVolume(val) { audioObj.volume = val; }
+
         /* --- VIDEO & P2P --- */
-        let localStream = null; const peers = {}; const dataChannels = {}; const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+        let localStream = null; const peers = {}; const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
         async function startWebRTC() {
             try { const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 360 }, audio: true }); localStream = stream;
-                UI.btnVideoEnable.classList.add('hidden-ui'); UI.btnVideoDisable.classList.remove('hidden-ui'); UI.fileTransferUI.classList.remove('hidden-ui');
-                addLocalVideo(stream); addSystemMessage("📹 Uplink Established.", "info"); broadcastWebRTCSignal('video_ready', {});
+                UI.btnVideoEnable.classList.add('hidden-ui'); UI.btnVideoDisable.classList.remove('hidden-ui'); addSystemMessage("📹 Uplink Established.", "info"); broadcastWebRTCSignal('video_ready', {});
             } catch (err) { console.error(err); addSystemMessage("Hardware Error: " + err.message, "error"); }
         }
         function stopWebRTC() {
             if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
-            Object.values(peers).forEach(pc => pc.close()); for (let key in peers) delete peers[key]; for (let key in dataChannels) delete dataChannels[key];
-            UI.videoGrid.innerHTML = ''; UI.btnVideoDisable.classList.add('hidden-ui'); UI.btnVideoEnable.classList.remove('hidden-ui'); UI.fileTransferUI.classList.add('hidden-ui');
+            Object.values(peers).forEach(pc => pc.close()); for (let key in peers) delete peers[key];
+            UI.videoGrid.innerHTML = ''; UI.btnVideoDisable.classList.add('hidden-ui'); UI.btnVideoEnable.classList.remove('hidden-ui');
             addSystemMessage("📹 Uplink Terminated.", "warning"); broadcastWebRTCSignal('video_stop', {});
         }
         function createPeerConnection(remoteUser) {
-            const pc = new RTCPeerConnection(rtcConfig); peers[remoteUser] = pc; const dc = pc.createDataChannel("fileTransfer"); setupDataChannel(dc, remoteUser);
+            const pc = new RTCPeerConnection(rtcConfig); peers[remoteUser] = pc;
             pc.onicecandidate = (e) => { if (e.candidate) broadcastWebRTCSignal('candidate', { candidate: e.candidate, target: remoteUser }); };
             pc.ontrack = (e) => {
                 const elId = `vid-remote-${remoteUser}`; if (!document.getElementById(elId)) {
-                    const div = document.createElement('div'); div.id = elId; div.className = "video-container remote";
-                    div.innerHTML = `<video autoplay playsinline muted></video><div class="remote-label">${remoteUser}</div>`; div.querySelector('video').srcObject = e.streams[0];
-                    UI.videoGrid.appendChild(div); UI.videoGrid.classList.remove('hidden'); addSystemMessage(`Visual link: ${remoteUser}`, "info");
+                    const div = document.createElement('div'); div.id = elId; div.className = "video-container remote w-full h-full bg-black rounded-xl overflow-hidden relative border border-white/10";
+                    div.innerHTML = `<video autoplay playsinline muted class="w-full h-full object-cover"></video><div class="absolute bottom-2 left-2 bg-black/50 px-2 py-0.5 rounded text-[8px] text-white">${remoteUser}</div>`; div.querySelector('video').srcObject = e.streams[0];
+                    UI.videoGrid.appendChild(div); UI.videoGrid.classList.remove('hidden'); UI.videoPlaceholder.classList.add('hidden'); UI.videoGrid.classList.add('grid'); addSystemMessage(`Visual link: ${remoteUser}`, "info");
                 }
             };
-            pc.ondatachannel = (e) => setupDataChannel(e.channel, remoteUser); if (localStream) localStream.getTracks().forEach(track => pc.addTrack(track, localStream)); return pc;
-        }
-        function setupDataChannel(dc, remoteUser) {
-            dataChannels[remoteUser] = dc;
-            dc.onmessage = async (event) => {
-                const data = event.data;
-                if (typeof data === 'string') { const meta = JSON.parse(data); receiveFileBuffer(remoteUser, meta); } else { processFileChunk(remoteUser, data); }
-            };
-        }
-        const fileReceivers = {};
-        function receiveFileBuffer(remoteUser, meta) { fileReceivers[remoteUser] = { name: meta.name, type: meta.type, size: meta.size, received: 0, chunks: [] }; UI.transferProgress.classList.remove('hidden'); UI.transferStatus.innerText = `Receiving: ${meta.name} (0%)`; }
-        function processFileChunk(remoteUser, chunk) {
-            const receiver = fileReceivers[remoteUser]; if (!receiver) return; receiver.chunks.push(chunk); receiver.received += chunk.byteLength;
-            const percent = Math.floor((receiver.received / receiver.size) * 100); UI.progressBar.style.width = percent + '%'; UI.transferStatus.innerText = `Receiving: ${receiver.name} (${percent}%)`;
-            if (receiver.received >= receiver.size) {
-                const blob = new Blob(receiver.chunks, { type: receiver.type }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = receiver.name; a.click();
-                addSystemMessage(`📁 ${t('fileReceived')} ${receiver.name}`, "info"); delete fileReceivers[remoteUser]; UI.transferProgress.classList.add('hidden'); UI.progressBar.style.width = '0%';
-            }
-        }
-        async function handleFileSelect(input) {
-            const file = input.files[0]; if (!file) return; const targetPeer = Object.keys(dataChannels)[0]; if (!targetPeer) { addSystemMessage("No active P2P connection.", "error"); return; }
-            const dc = dataChannels[targetPeer]; if (dc && dc.readyState === 'open') {
-                dc.send(JSON.stringify({ name: file.name, type: file.type, size: file.size })); const reader = new FileReader(); let offset = 0; const chunkSize = 16384;
-                UI.transferProgress.classList.remove('hidden'); UI.transferStatus.innerText = `Sending: ${file.name} (0%)`;
-                reader.onload = (e) => { dc.send(e.target.result); offset += e.target.result.byteLength; const percent = Math.floor((offset / file.size) * 100); UI.progressBar.style.width = percent + '%'; UI.transferStatus.innerText = `Sending: ${file.name} (${percent}%)`; if (offset < file.size) readSlice(offset); else { addSystemMessage(t('fileSent'), "info"); setTimeout(() => UI.transferProgress.classList.add('hidden'), 2000); input.value = ''; } };
-                const readSlice = (o) => { const slice = file.slice(o, o + chunkSize); reader.readAsArrayBuffer(slice); }; readSlice(0);
-            } else { addSystemMessage("Data channel not ready.", "error"); }
+            if (localStream) localStream.getTracks().forEach(track => pc.addTrack(track, localStream)); return pc;
         }
         function handleWebRTCMessage(data) {
             const sender = data.user; if (sender === userProfile.name) return;
@@ -957,55 +972,27 @@
         async function handleOffer(payload, sender) { let pc = peers[sender]; if (!pc) pc = createPeerConnection(sender); if (pc.signalingState === 'stable') { await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp)); const answer = await pc.createAnswer(); await pc.setLocalDescription(answer); broadcastWebRTCSignal('answer', { sdp: answer, target: sender }); } }
         async function handleAnswer(payload, sender) { const pc = peers[sender]; if (pc && pc.signalingState === 'have-local-offer') await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp)); }
         async function handleCandidate(payload, sender) { const pc = peers[sender]; if (pc) await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)); }
-        function handleLeaveCall(remoteUser) { if (peers[remoteUser]) { peers[remoteUser].close(); delete peers[remoteUser]; delete dataChannels[remoteUser]; const el = document.getElementById(`vid-remote-${remoteUser}`); if (el) el.remove(); addSystemMessage(`Signal lost from ${remoteUser}`, "warning"); } }
-        function addLocalVideo(stream) { const div = document.createElement('div'); div.id = "vid-local"; div.className = "video-container local"; div.innerHTML = `<video autoplay muted playsinline></video><div class="remote-label" style="color:#d8b4fe">ME</div>`; div.querySelector('video').srcObject = stream; UI.videoGrid.appendChild(div); UI.videoGrid.classList.remove('hidden'); }
+        function handleLeaveCall(remoteUser) { if (peers[remoteUser]) { peers[remoteUser].close(); delete peers[remoteUser]; const el = document.getElementById(`vid-remote-${remoteUser}`); if (el) el.remove(); addSystemMessage(`Signal lost from ${remoteUser}`, "warning"); } }
         function broadcastWebRTCSignal(signalType, payload) { if (mqttClient && mqttClient.isConnected()) { const topic = currentRoom === "public" ? "termos/public" : `termos/rooms/${currentRoom}`; const msgPayload = { user: userProfile.name, type: 'webrtc', signal: signalType, payload: payload }; const msg = new Paho.MQTT.Message(JSON.stringify(msgPayload)); msg.destinationName = topic; mqttClient.send(msg); } }
 
-        /* --- RADIO --- */
-        let audioObj = new Audio(); let currentPlayingStationUrl = null; let currentPlayingEl = null;
-        let searchTimeout = null;
-        if(UI.radioSearchInput) {
-            UI.radioSearchInput.addEventListener('input', (e) => {
-                const query = e.target.value.trim(); clearTimeout(searchTimeout);
-                if(query.length < 2) return; UI.radioStations.innerHTML = '<div class="text-gray-500 text-[9px] text-center py-4">SCANNING...</div>';
-                searchTimeout = setTimeout(() => searchStationsByName(query), 500);
-            });
-        }
-        function toggleMedia() { const deck = document.getElementById('media-deck'); deck.classList.toggle('active'); if(deck.classList.contains('active') && UI.radioGenres.children.length <= 1) loadRadioGenres(); }
-        function switchMediaTab(tab) { document.getElementById('tab-video').classList.add('hidden'); document.getElementById('tab-radio').classList.add('hidden'); document.getElementById('tab-'+tab).classList.remove('hidden'); const isActive = (t) => t === tab ? "bg-white/10 text-purple-300" : "text-gray-400 hover:text-white"; document.getElementById('tab-btn-video').className = `flex-1 py-1.5 text-[10px] font-bold rounded border border-white/5 transition-all ${isActive('video')}`; document.getElementById('tab-btn-radio').className = `flex-1 py-1.5 text-[10px] font-bold rounded border border-white/5 transition-all ${isActive('radio')}`; if(tab === 'radio') { if(UI.radioGenres.children.length <= 1) loadRadioGenres(); UI.radioSearchInput.focus(); } }
-        async function loadRadioGenres() { if(UI.radioGenres.children.length > 1) return; try { const res = await fetch('https://de1.api.radio-browser.info/json/tags'); const genres = (await res.json()).filter(g => g.stationcount > 10).sort((a,b) => b.stationcount - a.stationcount).slice(0, 15); UI.radioGenres.innerHTML = ''; genres.forEach(g => { const chip = document.createElement('div'); chip.className = 'genre-chip'; chip.innerText = `${g.name} (${g.stationcount})`; chip.onclick = () => { document.querySelectorAll('.genre-chip').forEach(c => c.classList.remove('active')); chip.classList.add('active'); loadStationsByTag(g.name); }; UI.radioGenres.appendChild(chip); }); } catch(e) { UI.radioGenres.innerHTML = '<div class="text-red-400 text-[9px]">ERROR</div>'; } }
-        async function searchStationsByName(name) { UI.radioStations.innerHTML = '<div class="text-gray-500 text-[9px] text-center py-4">SEARCHING...</div>'; try { const res = await fetch(`https://de1.api.radio-browser.info/json/stations/search?name=${encodeURIComponent(name)}&limit=10&order=clickcount&reverse=true&hidebroken=true`); const stations = await res.json(); renderStationList(stations); } catch(e) { UI.radioStations.innerHTML = '<div class="text-red-400 text-[9px]">ERROR</div>'; } }
-        async function loadStationsByTag(tag) { UI.radioStations.innerHTML = '<div class="text-gray-500 text-[9px] text-center py-4">LOADING...</div>'; try { const res = await fetch(`https://de1.api.radio-browser.info/json/stations/search?tag=${encodeURIComponent(tag)}&limit=15&order=clickcount&reverse=true&hidebroken=true`); const stations = await res.json(); renderStationList(stations); } catch(e) { UI.radioStations.innerHTML = '<div class="text-red-400 text-[9px]">ERROR</div>'; } }
-        function renderStationList(stations) { UI.radioStations.innerHTML = ''; if(stations.length === 0) { UI.radioStations.innerHTML = '<div class="text-gray-500 text-[9px] text-center py-4">NO STATIONS</div>'; return; } stations.forEach(s => { const div = document.createElement('div'); div.className = 'station-item'; const favicon = s.favicon ? `<img src="${s.favicon}" class="w-4 h-4 rounded mr-2 bg-black" onerror="this.style.display='none'">` : ''; div.innerHTML = `<div class="flex items-center">${favicon}<div><div class="station-name">${s.name}</div><div class="text-[8px] text-gray-500">${s.country || ''}</div></div></div><div class="station-bitrate">${Math.round(s.bitrate / 1000)}kbps</div>`; div.onclick = () => playRadioStation(div, s.url_resolved || s.url, s.name); UI.radioStations.appendChild(div); }); }
-        async function playRadioStation(el, url, name) { document.querySelectorAll('.station-item').forEach(i => i.classList.remove('playing')); if (currentPlayingStationUrl === url && !audioObj.paused) { audioObj.pause(); currentPlayingStationUrl = null; currentPlayingEl = null; return; } const originalName = el.querySelector('.station-name').innerText; el.querySelector('.station-name').innerText = `${t('radioBuffering')}...`; el.classList.add('playing'); if (audioObj.src) { audioObj.pause(); audioObj.currentTime = 0; } audioObj.src = url; audioObj.onerror = () => { el.querySelector('.station-name').innerText = originalName; el.classList.remove('playing'); addSystemMessage(`Radio Error: ${name}`, "error"); AudioFX.error(); currentPlayingStationUrl = null; }; audioObj.onplaying = () => { el.querySelector('.station-name').innerText = `${t('radioPlaying')} ▶`; el.classList.add('playing'); addSystemMessage(`Tuning into: ${name}`, "info"); }; try { await audioObj.play(); currentPlayingStationUrl = url; currentPlayingEl = el; } catch (e) { el.querySelector('.station-name').innerText = originalName; el.classList.remove('playing'); console.error(e); addSystemMessage("Playback blocked.", "error"); } }
-
-        /* --- IDE & DEVOPS --- */
+        /* --- IDE --- */
         function toggleCodeEditor() { const isHidden = UI.codeOverlay.classList.contains('hidden-ui'); if (isHidden) { if(!UI.codeArea.value) UI.codeArea.value = document.documentElement.outerHTML; UI.codeOverlay.classList.remove('hidden-ui'); UI.codeOverlay.classList.add('flex-ui'); setTimeout(runCode, 500); } else { UI.codeOverlay.classList.add('hidden-ui'); UI.codeOverlay.classList.remove('flex-ui'); } }
-        function toggleRepoSettings() { UI.repoSettings.classList.toggle('hidden-ui'); }
         function runCode() { const code = UI.codeArea.value; const doc = UI.previewFrame.contentDocument || UI.previewFrame.contentWindow.document; doc.open(); doc.write(code); doc.close(); }
 
-        // 1. Mutating AI (Auto Fix)
         async function triggerAutoFix() {
             const code = UI.codeArea.value; if(!code) return;
             UI.copilotStatus.innerText = t('copilotThinking');
             const thinkingDiv = document.createElement('div'); thinkingDiv.className = "text-[10px] text-purple-400 italic mb-2 animate-pulse"; thinkingDiv.innerText = "Analyzing & Patching..."; thinkingDiv.id = "copilot-thinking"; UI.copilotChatLog.appendChild(thinkingDiv);
             UI.copilotChatLog.scrollTop = UI.copilotChatLog.scrollHeight;
             try {
-                const messages = [
-                    { role: "system", content: "You are an expert developer. Analyze the code. Fix all bugs, improve syntax, and ensure it works perfectly. Return ONLY the complete corrected HTML/JS code inside a single code block. Do not add explanations outside the code block." },
-                    { role: "user", content: `Code:\n${code.substring(0, 4000)}` }
-                ];
+                const messages = [{ role: "system", content: "You are an expert developer. Fix all bugs, improve syntax, and ensure it works perfectly. Return ONLY complete corrected HTML/JS code inside a single code block. Do not add explanations outside of code block." }, { role: "user", content: `Code:\n${code.substring(0, 4000)}` }];
                 const reply = await safeFetch(messages);
-                // Extract code block
                 const codeMatch = reply.match(/```(?:html)?([\s\S]*?)```/);
                 const cleanCode = codeMatch ? codeMatch[1].trim() : reply;
-                
-                UI.codeArea.value = cleanCode;
-                runCode();
+                UI.codeArea.value = cleanCode; runCode();
                 const successMsg = document.createElement('div'); successMsg.className = "text-[10px] text-green-400 font-bold mb-2 border-l-2 border-green-500 pl-2"; successMsg.innerText = "✅ " + t('patchApplied'); UI.copilotChatLog.appendChild(successMsg);
             } catch(e) { const errDiv = document.createElement('div'); errDiv.className = "text-[10px] text-red-400 mb-2"; errDiv.innerText = "Fix Error: " + e.message; UI.copilotChatLog.appendChild(errDiv); } finally { const tEl = document.getElementById('copilot-thinking'); if(tEl) tEl.remove(); UI.copilotStatus.innerText = "READY"; UI.copilotChatLog.scrollTop = UI.copilotChatLog.scrollHeight; }
         }
-
         async function askCopilot() {
             const query = UI.copilotInput.value.trim(); const code = UI.codeArea.value; if(!query) return;
             UI.copilotInput.value = ''; UI.copilotStatus.innerText = t('copilotThinking');
@@ -1019,97 +1006,29 @@
             } catch (e) { const errDiv = document.createElement('div'); errDiv.className = "text-[10px] text-red-400 mb-2"; errDiv.innerText = "Error: " + e.message; UI.copilotChatLog.appendChild(errDiv); } finally { const tEl = document.getElementById('copilot-thinking'); if(tEl) tEl.remove(); UI.copilotStatus.innerText = "READY"; UI.copilotChatLog.scrollTop = UI.copilotChatLog.scrollHeight; }
         }
 
-        // 2. Install / Load Repo
-        async function installRepo() {
-            const repoRef = UI.loadRepoInput.value.trim();
-            if(!repoRef) return;
-            const parts = repoRef.split('/');
-            if(parts.length < 2) { addSystemMessage("Invalid format. Use owner/repo", "error"); return; }
-            const owner = parts[0]; const repo = parts[1];
-            
-            try {
-                // Fetch default branch
-                const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
-                if(!repoRes.ok) throw new Error("Repo not found");
-                const repoData = await repoRes.json();
-                const defaultBranch = repoData.default_branch || 'main';
-                
-                // Try to find index.html or README.md
-                const filesToTry = ['index.html', 'index.htm', 'README.md', 'main.js'];
-                let loaded = false;
-                
-                for(let file of filesToTry) {
-                    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${file}?ref=${defaultBranch}`);
-                    if(res.ok) {
-                        const data = await res.json();
-                        if(data.content) {
-                            const content = decodeURIComponent(escape(atob(data.content)));
-                            UI.codeArea.value = content;
-                            UI.shaDisplay.innerText = `SHA: ${data.sha.substring(0,7)}`;
-                            currentFileSHA = data.sha;
-                            
-                            // Auto-fill settings
-                            UI.ghOwner.value = owner;
-                            UI.ghRepo.value = repo;
-                            UI.ghPath.value = file;
-                            
-                            addSystemMessage(`Installed: ${file} from ${owner}/${repo}`, "info");
-                            runCode();
-                            loaded = true;
-                            break;
-                        }
-                    }
-                }
-                if(!loaded) throw new Error("Could not find a supported file (index.html, README.md, etc.)");
-            } catch(e) { addSystemMessage("Install Error: " + e.message, "error"); }
-        }
-
-        // 3. Direct GitHub Push
-        async function pushToRepo() {
-            const token = UI.ghTokenInput.value.trim() || ghToken;
-            const owner = UI.ghOwner.value.trim();
-            const repo = UI.ghRepo.value.trim();
-            const path = UI.ghPath.value.trim() || 'index.html';
-            
-            if(!token || !owner || !repo) { alert("Please configure Repo Settings (Token, Owner, Repo) first."); toggleRepoSettings(); return; }
-            
-            const content = UI.codeArea.value;
-            const encodedContent = btoa(unescape(encodeURIComponent(content)));
-            const message = `Update ${path} via TermOS Flagship`;
-
-            try {
-                // Fetch current SHA if we don't have it (for updates)
-                let sha = currentFileSHA;
-                if(!sha) {
-                    const checkRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, { headers: { 'Authorization': `token ${token}` } });
-                    if(checkRes.ok) { const data = await checkRes.json(); sha = data.sha; } else if(checkRes.status === 404) { sha = null; } // New file
-                    else { throw new Error("Failed to check file status"); }
-                }
-
-                const payload = {
-                    message: message,
-                    content: encodedContent,
-                    sha: sha // Omitting this creates a new file. Including it updates.
-                };
-
-                const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    addSystemMessage(t('gistSuccess') + ` (Commit: ${data.commit.sha.substring(0,7)})`, "info");
-                    currentFileSHA = data.content.sha;
-                    UI.shaDisplay.innerText = `SHA: ${currentFileSHA.substring(0,7)}`;
-                } else {
-                    const err = await res.json();
-                    throw new Error(err.message);
-                }
-            } catch (e) {
-                addSystemMessage(t('gistError') + `: ${e.message}`, "error");
-            }
+        /* --- CLI --- */
+        function toggleCLI() { const overlay = UI.cliOverlay; if(overlay.classList.contains('hidden-ui')) { overlay.classList.remove('hidden-ui'); overlay.classList.add('flex-ui'); setTimeout(() => UI.cliInput.focus(), 100); } else { overlay.classList.add('hidden-ui'); overlay.classList.remove('flex-ui'); } }
+        function cliLog(text, color = "#22d3ee") { const div = document.createElement('div'); div.style.color = color; div.innerText = text; UI.cliOutput.appendChild(div); UI.cliOutput.scrollTop = UI.cliOutput.scrollHeight; }
+        function handleCLIInput() {
+            const rawInput = UI.cliInput.value.trim(); if(!rawInput) return; UI.cliInput.value = ''; cliLog(`user@termos:~$ ${rawInput}`, "#fff"); const parts = rawInput.split(' '); const cmd = parts[0].toLowerCase();
+            if (cmd === 'npx' && parts[1] === 'tailwindcss' && parts[2] === 'init') {
+                cliLog("Initializing Tailwind CSS...", "#22c55e");
+                setTimeout(() => {
+                    cliLog("Created tailwind.config.js", "#22c55e");
+                    const config = `/** @type {import('tailwindcss').Config} */
+module.exports = { content: ["./*.html", "./src/**/*.{js,ts,jsx,tsx}*/"], theme: { extend: {} }, plugins: [] }`;
+                    if(UI.codeOverlay.classList.contains('hidden-ui')) toggleCodeEditor();
+                    UI.codeArea.value = config + "\n\n<!-- Add your HTML here -->"; runCode();
+                    cliLog("Success: Configuration generated.", "#22c55e");
+                }, 800);
+            } else if (cmd === 'add' && parts[1]) {
+                const classes = rawInput.substring(4);
+                cliLog(`Generating div with classes: ${classes}`, "#22c55e");
+                if(UI.codeOverlay.classList.contains('hidden-ui')) toggleCodeEditor();
+                UI.codeArea.value += `\n<div class="${classes}">New Element</div>\n`; runCode(); cliLog("Success: Element appended.", "#22c55e");
+            } else if (cmd === 'help') { cliLog("Available commands:", "#eab308"); cliLog("  npx tailwindcss init", "#fff"); cliLog("  add [classes]", "#fff"); cliLog("  clear", "#fff"); } 
+            else if (cmd === 'clear') { UI.cliOutput.innerHTML = '<div class="text-white">Welcome to TermOS v4.0 CLI.</div><div class="text-gray-400 mb-4">Type \'help\' for available commands.</div>'; } 
+            else { cliLog(`Command not found: ${cmd}. Type 'help'.`, "#ef4444"); }
         }
 
         /* --- VISUALS --- */
